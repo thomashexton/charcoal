@@ -10,45 +10,35 @@ for (const scene of allScenes) {
     configureTest(this, scene);
 
     it('Absorbs changes into downstack commit and restacks', () => {
-      // Setup: Trunk -> A -> B -> C
-      // Commit A: adds file "f1"
-      scene.repo.createChange('content A', 'f1');
-      scene.repo.runCliCommand(['branch', 'create', 'A', '-m', 'commit A']);
+      // Setup: Trunk -> a -> b -> c
+      scene.repo.createChange('a', 'f1');
+      scene.repo.runCliCommand(['create', 'a', '-m', 'a']);
 
-      // Commit B: adds file "f2"
-      scene.repo.createChange('content B', 'f2');
-      scene.repo.runCliCommand(['branch', 'create', 'B', '-m', 'commit B']);
+      scene.repo.createChange('b', 'f2');
+      scene.repo.runCliCommand(['create', 'b', '-m', 'b']);
 
-      // Commit C: adds file "f3" (to test restacking upstack)
-      scene.repo.createChange('content C', 'f3');
-      scene.repo.runCliCommand(['branch', 'create', 'C', '-m', 'commit C']);
+      scene.repo.createChange('c', 'f3');
+      scene.repo.runCliCommand(['create', 'c', '-m', 'c']);
 
-      // Checkout B
-      scene.repo.checkoutBranch('B');
+      // Checkout b, modify f1 (from a)
+      scene.repo.checkoutBranch('b');
+      scene.repo.createChange('a modified', 'f1', true);
 
-      // Modify f1 (from A)
-      // Note: createChange creates or overwrites file.
-      // Filename will be f1_test.txt
-      scene.repo.createChange('content A modified', 'f1', true); // true for unstaged
-
-      // Run gt absorb
-      // We use -a to stage the change to f1. -f to avoid prompt.
+      // Run gt absorb (-a to stage, -f to skip prompt)
       scene.repo.runCliCommand(['absorb', '-a', '-f']);
 
-      // Verify A is changed.
-      // Checkout A and check content.
-      scene.repo.checkoutBranch('A');
+      // Verify a has the modified content
+      scene.repo.checkoutBranch('a');
       const f1Path = path.join(scene.repo.dir, 'f1_test.txt');
-      const contentA = fs.readFileSync(f1Path, 'utf-8');
-      expect(contentA).to.equal('content A modified');
+      expect(fs.readFileSync(f1Path, 'utf-8')).to.equal('a modified');
 
-      // Verify B is restacked onto new A.
-      scene.repo.checkoutBranch('B');
-      expectCommits(scene.repo, 'commit B, commit A, 1');
+      // Verify b is restacked onto new a
+      scene.repo.checkoutBranch('b');
+      expectCommits(scene.repo, 'b, a, 1');
 
-      // Verify C is restacked onto new B.
-      scene.repo.checkoutBranch('C');
-      expectCommits(scene.repo, 'commit C, commit B, commit A, 1');
+      // Verify c is restacked onto new b
+      scene.repo.checkoutBranch('c');
+      expectCommits(scene.repo, 'c, b, a, 1');
     });
 
     it('Errors gracefully if git-absorb is not installed', () => {

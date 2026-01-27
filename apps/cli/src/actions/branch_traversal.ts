@@ -8,6 +8,7 @@ type TBranchNavigation =
   | {
       direction: 'UP' | 'DOWN';
       numSteps: number;
+      towards?: string;
     }
   | { direction: 'TOP' | 'BOTTOM' };
 export async function switchBranchAction(

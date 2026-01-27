@@ -7,3 +7,11 @@ export function addAll(): void {
     resource: 'addAll',
   });
 }
+
+export function addAllTracked(): void {
+  runGitCommand({
+    args: ['add', '-u'],
+    onError: 'throw',
+    resource: 'addAllTracked',
+  });
+}

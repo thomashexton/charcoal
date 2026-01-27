@@ -9,8 +9,10 @@ export async function createBranchAction(
     branchName?: string;
     message?: string;
     all?: boolean;
+    update?: boolean;
     insert?: boolean;
     patch?: boolean;
+    verbose?: boolean;
   },
   context: TContext
 ): Promise<void> {
@@ -25,6 +27,8 @@ export async function createBranchAction(
 
   if (opts.all) {
     context.engine.addAll();
+  } else if (opts.update) {
+    context.engine.addAllTracked();
   }
 
   if (context.engine.detectStagedChanges()) {

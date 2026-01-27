@@ -93,6 +93,7 @@ export type TEngine = {
   squashCurrentBranch: (opts: { message?: string; noEdit?: boolean }) => void;
 
   addAll: () => void;
+  addAllTracked: () => void;
   detach: () => void;
   unbranch: () => void;
   detachAndResetBranchChanges: () => void;
@@ -749,6 +750,7 @@ export function composeEngine({
       };
     },
     addAll: git.addAll,
+    addAllTracked: git.addAllTracked,
     detach() {
       const branchName = getCurrentBranchOrThrow();
       const cachedMeta = assertBranchIsValidAndNotTrunkAndGetMeta(branchName);

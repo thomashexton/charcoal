@@ -5,7 +5,7 @@ import { expectCommits } from '../../lib/utils/expect_commits';
 
 for (const scene of allScenes) {
   // eslint-disable-next-line max-lines-per-function
-  describe(`(${scene}): stack restack`, function () {
+  describe(`(${scene}): restack --stack`, function () {
     configureTest(this, scene);
 
     it('Can restack a stack of three branches', () => {
@@ -28,7 +28,7 @@ for (const scene of allScenes) {
         scene.repo.listCurrentBranchCommitMessages().slice(0, 2).join(', ')
       ).to.equal('1.5, 1');
 
-      scene.repo.runCliCommand(['stack', 'restack', '-q']);
+      scene.repo.runCliCommand(['restack', '--stack', '-q']);
 
       expect(scene.repo.currentBranchName()).to.equal('main');
 
@@ -47,7 +47,7 @@ for (const scene of allScenes) {
       scene.repo.createChangeAndCommit('1.5');
 
       expect(() =>
-        scene.repo.runCliCommand(['stack', 'restack', '-q'])
+        scene.repo.runCliCommand(['restack', '--stack', '-q'])
       ).to.throw();
       expect(scene.repo.rebaseInProgress()).to.eq(true);
 
@@ -80,7 +80,7 @@ for (const scene of allScenes) {
 
       scene.repo.checkoutBranch('b');
 
-      scene.repo.runCliCommand(['stack', 'restack', '-q']);
+      scene.repo.runCliCommand(['restack', '--stack', '-q']);
 
       expect(scene.repo.currentBranchName()).to.eq('b');
       expectCommits(scene.repo, 'b, a, 1.5, 1');

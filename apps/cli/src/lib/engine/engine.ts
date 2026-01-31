@@ -128,6 +128,8 @@ export type TEngine = {
   isMergedIntoTrunk: (branchName: string) => boolean;
   isBranchFixed: (branchName: string) => boolean;
   isBranchEmpty: (branchName: string) => boolean;
+  isFrozen: (branchName: string) => boolean;
+  setFrozen: (branchName: string, frozen: boolean) => void;
   populateRemoteShas: () => Promise<void>;
   branchMatchesRemote: (branchName: string) => boolean;
 
@@ -901,6 +903,20 @@ export function composeEngine({
       assertBranch(branchName);
       const cachedMeta = assertBranchIsValidAndNotTrunkAndGetMeta(branchName);
       return git.isDiffEmpty(branchName, cachedMeta.parentBranchRevision);
+    },
+    isFrozen: (branchName: string) => {
+      const meta = cache.branches[branchName];
+      return meta?.frozen ?? false;
+    },
+    setFrozen: (branchName: string, frozen: boolean) => {
+      const meta = cache.branches[branchName];
+      if (meta?.validationResult !== 'VALID') {
+        return;
+      }
+      updateMeta(branchName, {
+        ...meta,
+        frozen,
+      });
     },
     populateRemoteShas: async () => {
       await git.populateRemoteShas(remote);

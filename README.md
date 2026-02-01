@@ -34,9 +34,42 @@ The Graphite CLI does not need to depend on Graphite's API, so this project allo
 
 <https://graphite.dev/docs/graphite-cli/>
 
-Right now, the Graphite Docs are more or less in sync with the features available in Charcoal.
+The Graphite Docs cover most commands available in Charcoal. See the compatibility section below for differences.
 
-As Graphite continues to develop their private version of the CLI, however, these will become out of sync. Ideally we can add our own open source docs to accompany this project.
+## Graphite CLI Compatibility
+
+Charcoal aims to be compatible with the official Graphite CLI. Most commands work identically.
+
+### Fully Compatible Commands
+
+- **Branch creation & modification**: `gt create`, `gt modify`, `gt fold`, `gt split`, `gt squash`, `gt absorb`
+- **Navigation**: `gt up`, `gt down`, `gt top`, `gt bottom`, `gt checkout`
+- **Stack management**: `gt restack`, `gt move`, `gt reorder`, `gt delete`, `gt rename`
+- **Syncing & submission**: `gt submit`, `gt sync`, `gt get`
+- **Viewing**: `gt log`, `gt info`
+- **Tracking**: `gt track`, `gt untrack`, `gt unlink`
+- **Collaboration**: `gt freeze`, `gt unfreeze`
+- **Recovery**: `gt undo`, `gt abort`, `gt continue`, `gt pop`
+- **Utilities**: `gt init`, `gt auth`, `gt config`, `gt revert`
+
+### Excluded Features
+
+The following Graphite features are intentionally not implemented:
+
+| Feature | Reason |
+|---------|--------|
+| AI features (`--ai` flags) | Requires Graphite server |
+| `gt merge` command | Requires Graphite merge queue |
+| `gt guide` command | Interactive tutorials not ported |
+| Multiple trunk support (`gt trunk --add`) | Not yet implemented |
+| Full remote branch sync in `gt sync` | `sync` pulls trunk and cleans merged branches, but doesn't reconcile remote changes to all local branches |
+
+### Known Differences
+
+| Feature | Graphite | Charcoal |
+|---------|----------|----------|
+| `gt modify --into` | Amend changes to downstack branch | Not implemented |
+| `gt config` | Interactive TUI menu | Simple `gt config <key> <value>` CLI |
 
 ## Contributing
 

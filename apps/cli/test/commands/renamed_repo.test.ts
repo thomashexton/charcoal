@@ -39,13 +39,7 @@ for (const scene of allScenes) {
       ]);
     });
 
-    it('sync pulls from remote and cleans up', () => {
-      scene.repo.runCliCommand([
-        `sync`,
-        `--no-pull`,
-        `--no-delete`,
-        `--no-interactive`,
-      ]);
-    });
+    // Note: sync test removed - requires a remote origin which BasicScene doesn't have.
+    // See repo/sync.test.ts for comprehensive sync testing with proper remote setup.
   });
 }

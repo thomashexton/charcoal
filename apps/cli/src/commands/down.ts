@@ -1,25 +1,22 @@
-import yargs from 'yargs';
+import yargs, { Argv } from 'yargs';
 import { switchBranchAction } from '../actions/branch_traversal';
 import { graphite } from '../lib/runner';
 
-const args = {
-  steps: {
-    describe: `The number of levels to traverse downstack.`,
-    demandOption: false,
-    default: 1,
-    type: 'number',
-    alias: 'n',
-  },
-} as const;
-
-type argsT = yargs.Arguments<yargs.InferredOptionTypes<typeof args>>;
+interface DownArgs {
+  steps: number;
+}
 
 export const command = 'down [steps]';
 export const canonical = 'down';
 export const aliases = ['d'];
 export const description = 'Switch to the parent of the current branch.';
-export const builder = args;
-export const handler = async (argv: argsT): Promise<void> =>
+export const builder = (yargs: Argv): Argv<DownArgs> =>
+  yargs.positional('steps', {
+    describe: 'The number of levels to traverse downstack.',
+    type: 'number',
+    default: 1,
+  }) as Argv<DownArgs>;
+export const handler = async (argv: yargs.Arguments<DownArgs>): Promise<void> =>
   graphite(
     argv,
     canonical,

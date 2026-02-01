@@ -5,9 +5,12 @@ import { GitRepo } from '../../../src/lib/utils/git_repo';
 import { AbstractScene } from './abstract_scene';
 
 export class CloneScene extends AbstractScene {
-  originTmpDir!: tmp.DirResult;
-  originDir!: string;
+  declare originTmpDir: tmp.DirResult;
+  declare originDir: string;
   originRepo!: GitRepo;
+  private cloneTmpDir!: tmp.DirResult;
+  private bareOriginTmpDir: tmp.DirResult | undefined;
+  private bareOriginDir: string | undefined;
 
   public toString(): string {
     return 'CloneScene';
@@ -16,13 +19,20 @@ export class CloneScene extends AbstractScene {
   public setup(): void {
     super.setup();
     this.repo.createChangeAndCommit('1', '1');
+
+    // Store the bare origin created by AbstractScene so we can clean it up
+    this.bareOriginTmpDir = this.originTmpDir;
+    this.bareOriginDir = this.originDir;
+
+    // The original working repo becomes the origin for the clone
     [this.originDir, this.originRepo, this.originTmpDir] = [
       this.dir,
       this.repo,
       this.tmpDir,
     ];
 
-    this.dir = tmp.dirSync().name;
+    this.cloneTmpDir = tmp.dirSync();
+    this.dir = this.cloneTmpDir.name;
     this.repo = new GitRepo(this.dir, { repoUrl: this.originDir });
     fs.writeFileSync(
       `${this.dir}/.git/.graphite_repo_config`,
@@ -38,8 +48,13 @@ export class CloneScene extends AbstractScene {
     if (!process.env.DEBUG) {
       fs.emptyDirSync(this.originDir);
       fs.emptyDirSync(this.dir);
-      this.tmpDir.removeCallback();
+      this.cloneTmpDir.removeCallback();
       this.originTmpDir.removeCallback();
+      // Clean up the bare origin that AbstractScene created
+      if (this.bareOriginDir && this.bareOriginTmpDir) {
+        fs.emptyDirSync(this.bareOriginDir);
+        this.bareOriginTmpDir.removeCallback();
+      }
     }
   }
 }

@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import fs from 'fs-extra';
 import tmp from 'tmp';
 import {
@@ -11,8 +12,10 @@ import { GitRepo } from '../../../src/lib/utils/git_repo';
 
 export abstract class AbstractScene {
   tmpDir: tmp.DirResult;
+  originTmpDir: tmp.DirResult | undefined;
   repo: GitRepo;
   dir: string;
+  originDir: string | undefined;
   oldDir: string;
 
   constructor() {
@@ -38,6 +41,21 @@ export abstract class AbstractScene {
     process.env.GRAPHITE_PROFILE = '';
     this.oldDir = process.cwd();
     process.chdir(this.dir);
+
+    // Set up a bare repo as origin so sync commands can pull
+    this.originTmpDir = tmp.dirSync();
+    this.originDir = this.originTmpDir.name;
+    spawnSync('git', ['init', '--bare', this.originDir]);
+    spawnSync('git', ['remote', 'add', 'origin', this.originDir], {
+      cwd: this.dir,
+    });
+  }
+
+  // Push main to origin - call after initial commits are made
+  public pushMainToOrigin(): void {
+    if (this.originDir) {
+      spawnSync('git', ['push', '-u', 'origin', 'main'], { cwd: this.dir });
+    }
   }
 
   public cleanup(): void {
@@ -45,6 +63,10 @@ export abstract class AbstractScene {
     if (!process.env.DEBUG) {
       fs.emptyDirSync(this.dir);
       this.tmpDir.removeCallback();
+      if (this.originDir && this.originTmpDir) {
+        fs.emptyDirSync(this.originDir);
+        this.originTmpDir.removeCallback();
+      }
     }
   }
 

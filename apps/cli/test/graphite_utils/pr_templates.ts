@@ -73,8 +73,8 @@ function testPRTemplates(
   );
 
   const foundPRTemplates = scene.repo.runCliCommandAndGetOutput([
-    'repo',
-    'pr-templates',
+    'config',
+    'repo-pr-templates',
   ]);
   args.templatePaths.forEach(
     (template) => expect(foundPRTemplates.includes(template)).to.be.true

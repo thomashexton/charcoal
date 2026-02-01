@@ -9,10 +9,10 @@ for (const scene of allScenes) {
 
     it('restack with no flags defaults to --stack scope', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('main');
       scene.repo.createChangeAndCommit('1.5', '1.5');
@@ -26,10 +26,10 @@ for (const scene of allScenes) {
 
     it('restack --stack restacks entire stack', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('main');
       scene.repo.createChangeAndCommit('1.5', '1.5');
@@ -43,10 +43,10 @@ for (const scene of allScenes) {
 
     it('restack --upstack restacks current and descendants only', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('a');
       scene.repo.runCliCommand(['restack', '--upstack', '-q']);
@@ -56,10 +56,10 @@ for (const scene of allScenes) {
 
     it('restack --downstack restacks current and ancestors only', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('main');
       scene.repo.createChangeAndCommit('1.5', '1.5');
@@ -72,10 +72,10 @@ for (const scene of allScenes) {
 
     it('restack -s is alias for --stack', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('main');
       scene.repo.createChangeAndCommit('1.5', '1.5');

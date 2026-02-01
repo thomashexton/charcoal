@@ -8,7 +8,7 @@ for (const scene of allScenes) {
 
     it('up moves to child branch', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.checkoutBranch('main');
 
       scene.repo.runCliCommand([`up`, `--no-interactive`]);
@@ -17,9 +17,9 @@ for (const scene of allScenes) {
 
     it('down moves to parent branch', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.runCliCommand([`down`, `--no-interactive`]);
       expect(scene.repo.currentBranchName()).to.equal('a');
@@ -27,11 +27,11 @@ for (const scene of allScenes) {
 
     it('top moves to tip of stack', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
       scene.repo.createChange('c', 'c');
-      scene.repo.runCliCommand([`branch`, `create`, `c`, `-m`, `c`]);
+      scene.repo.runCliCommand([`create`, `c`, `-m`, `c`]);
       scene.repo.checkoutBranch('a');
 
       scene.repo.runCliCommand([`top`, `--no-interactive`]);
@@ -40,11 +40,11 @@ for (const scene of allScenes) {
 
     it('bottom moves to first branch from trunk', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
       scene.repo.createChange('c', 'c');
-      scene.repo.runCliCommand([`branch`, `create`, `c`, `-m`, `c`]);
+      scene.repo.runCliCommand([`create`, `c`, `-m`, `c`]);
 
       scene.repo.runCliCommand([`bottom`, `--no-interactive`]);
       expect(scene.repo.currentBranchName()).to.equal('a');
@@ -52,9 +52,9 @@ for (const scene of allScenes) {
 
     it('checkout switches to specified branch', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.runCliCommand([`checkout`, `a`]);
       expect(scene.repo.currentBranchName()).to.equal('a');

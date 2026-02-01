@@ -13,15 +13,15 @@ for (const scene of allScenes) {
       // Setup: Trunk -> A -> B -> C
       // Commit A: adds file "f1"
       scene.repo.createChange('content A', 'f1');
-      scene.repo.runCliCommand(['branch', 'create', 'A', '-m', 'commit A']);
+      scene.repo.runCliCommand(['create', 'A', '-m', 'commit A']);
 
       // Commit B: adds file "f2"
       scene.repo.createChange('content B', 'f2');
-      scene.repo.runCliCommand(['branch', 'create', 'B', '-m', 'commit B']);
+      scene.repo.runCliCommand(['create', 'B', '-m', 'commit B']);
 
       // Commit C: adds file "f3" (to test restacking upstack)
       scene.repo.createChange('content C', 'f3');
-      scene.repo.runCliCommand(['branch', 'create', 'C', '-m', 'commit C']);
+      scene.repo.runCliCommand(['create', 'C', '-m', 'commit C']);
 
       // Checkout B
       scene.repo.checkoutBranch('B');

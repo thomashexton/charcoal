@@ -8,7 +8,7 @@ for (const scene of allScenes) {
 
     it('submit --dry-run with no flags defaults to --stack scope', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       const output = scene.repo.runCliCommandAndGetOutput([
         'submit',
@@ -19,7 +19,7 @@ for (const scene of allScenes) {
 
     it('submit --stack --dry-run works', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       const output = scene.repo.runCliCommandAndGetOutput([
         'submit',
@@ -31,7 +31,7 @@ for (const scene of allScenes) {
 
     it('submit -s --dry-run uses alias for --stack', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       const output = scene.repo.runCliCommandAndGetOutput([
         'submit',
@@ -43,7 +43,7 @@ for (const scene of allScenes) {
 
     it('ss --dry-run implies --stack scope', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       const output = scene.repo.runCliCommandAndGetOutput(['ss', '--dry-run']);
       expect(output).to.include('a');
@@ -51,16 +51,17 @@ for (const scene of allScenes) {
 
     it('submit --upstack --dry-run works', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.checkoutBranch('a');
       const output = scene.repo.runCliCommandAndGetOutput([
         'submit',
         '--upstack',
         '--dry-run',
+        '--ignore-out-of-sync-trunk',
       ]);
       expect(output).to.include('a');
       expect(output).to.include('b');
@@ -68,15 +69,16 @@ for (const scene of allScenes) {
 
     it('submit --downstack --dry-run works', () => {
       scene.repo.createChange('a', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('b', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       const output = scene.repo.runCliCommandAndGetOutput([
         'submit',
         '--downstack',
         '--dry-run',
+        '--ignore-out-of-sync-trunk',
       ]);
       expect(output).to.include('a');
       expect(output).to.include('b');

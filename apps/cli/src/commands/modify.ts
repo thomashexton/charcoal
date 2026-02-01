@@ -1,6 +1,7 @@
 import yargs from 'yargs';
 import { commitAmendAction } from '../actions/commit_amend';
 import { commitCreateAction } from '../actions/commit_create';
+import { editBranchAction } from '../actions/edit_branch';
 import { graphite } from '../lib/runner';
 
 const args = {
@@ -51,6 +52,26 @@ const args = {
     type: 'boolean',
     alias: 'p',
   },
+  update: {
+    describe: 'Stage all updates to tracked files before committing.',
+    demandOption: false,
+    default: false,
+    type: 'boolean',
+    alias: 'u',
+  },
+  'reset-author': {
+    describe: 'Set the author of the commit to the current user if amending.',
+    demandOption: false,
+    default: false,
+    type: 'boolean',
+  },
+  'interactive-rebase': {
+    describe:
+      'Ignore all other flags and start a git interactive rebase on the commits in this branch.',
+    demandOption: false,
+    default: false,
+    type: 'boolean',
+  },
 } as const;
 
 type argsT = yargs.Arguments<yargs.InferredOptionTypes<typeof args>>;
@@ -64,11 +85,16 @@ export const builder = args;
 
 export const handler = async (argv: argsT): Promise<void> => {
   return graphite(argv, canonical, async (context) => {
+    if (argv['interactive-rebase']) {
+      return editBranchAction(context);
+    }
+
     if (argv.commit) {
       return commitCreateAction(
         {
           message: argv.message,
           addAll: argv.all,
+          update: argv.update,
           patch: argv.patch,
         },
         context
@@ -80,7 +106,9 @@ export const handler = async (argv: argsT): Promise<void> => {
         message: argv.message,
         noEdit: argv['no-edit'] || !argv.edit,
         addAll: argv.all,
+        update: argv.update,
         patch: argv.patch,
+        resetAuthor: argv['reset-author'],
       },
       context
     );

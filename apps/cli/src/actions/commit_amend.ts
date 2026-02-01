@@ -9,9 +9,11 @@ import { restackBranches } from './restack';
 export function commitAmendAction(
   opts: {
     addAll: boolean;
+    update: boolean;
     message?: string;
     noEdit: boolean;
     patch: boolean;
+    resetAuthor: boolean;
   },
   context: TContext
 ): void {
@@ -24,13 +26,16 @@ export function commitAmendAction(
 
   if (opts.addAll) {
     context.engine.addAll();
+  } else if (opts.update) {
+    context.engine.addAllTracked();
   }
 
   context.engine.commit({
     amend: true,
     noEdit: opts.noEdit,
     message: opts.message,
-    patch: !opts.addAll && opts.patch,
+    patch: !opts.addAll && !opts.update && opts.patch,
+    resetAuthor: opts.resetAuthor,
   });
 
   if (!opts.noEdit) {

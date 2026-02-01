@@ -185,7 +185,7 @@ function getScope(argv: argsT): TScopeSpec {
   if (argv.upstack) {
     return SCOPE.UPSTACK;
   }
-  return SCOPE.STACK;
+  return SCOPE.DOWNSTACK;
 }
 
 function isStackAlias(): boolean {
@@ -223,7 +223,7 @@ export const handler = async (argv: argsT): Promise<void> => {
         mergeWhenReady: argv['merge-when-ready'],
         rerequestReview: argv['rerequest-review'],
         targetTrunk: argv['target-trunk'],
-        cli: argv.cli,
+        cli: argv.cli || argv['edit-title'] || argv['edit-description'],
         ignoreOutOfSyncTrunk: argv['ignore-out-of-sync-trunk'],
       },
       context

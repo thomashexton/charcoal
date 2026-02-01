@@ -95,6 +95,17 @@ describe(`backwards compatibility`, function () {
       expect(result.status).to.equal(1);
       expect(result.stderr).to.not.include('deprecated');
     });
+
+    it('deprecated repo config commands exit silently', () => {
+      const result = runCliCommandWithEnv(
+        scene.repo.dir,
+        scene.repo.userConfigPath,
+        ['repo', 'owner'],
+        { GT_CLI_SHOW_DEPRECATION_HELP: undefined }
+      );
+      expect(result.status).to.equal(1);
+      expect(result.stderr).to.not.include('deprecated');
+    });
   });
 
   describe('GT_CLI_SHOW_DEPRECATION_HELP=1', function () {
@@ -157,6 +168,18 @@ describe(`backwards compatibility`, function () {
       expect(result.status).to.equal(1);
       expect(result.stderr).to.include('deprecated');
       expect(result.stderr).to.include('gt init');
+    });
+
+    it('deprecated repo config commands suggest config subcommand', () => {
+      const result = runCliCommandWithEnv(
+        scene.repo.dir,
+        scene.repo.userConfigPath,
+        ['repo', 'owner'],
+        { GT_CLI_SHOW_DEPRECATION_HELP: '1' }
+      );
+      expect(result.status).to.equal(1);
+      expect(result.stderr).to.include('deprecated');
+      expect(result.stderr).to.include('config repo-owner');
     });
   });
 });

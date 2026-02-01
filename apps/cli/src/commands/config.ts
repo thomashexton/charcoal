@@ -2,7 +2,20 @@ import chalk from 'chalk';
 import yargs from 'yargs';
 import { graphite } from '../lib/runner';
 
-const args = {
+const CONFIG_KEYS = [
+  'branchPrefix',
+  'branchDate',
+  'branchReplacement',
+  'tips',
+  'editor',
+  'pager',
+  'restackCommitterDateIsAuthorDate',
+  'submitIncludeCommitMessages',
+] as const;
+
+type ConfigKey = (typeof CONFIG_KEYS)[number];
+
+const keyValueArgs = {
   key: {
     describe: 'Configuration key to get or set.',
     type: 'string',
@@ -21,27 +34,29 @@ const args = {
   },
 } as const;
 
-type argsT = yargs.Arguments<yargs.InferredOptionTypes<typeof args>>;
+type KeyValueArgsT = yargs.Arguments<
+  yargs.InferredOptionTypes<typeof keyValueArgs>
+>;
 
 export const command = 'config [key] [value]';
 export const canonical = 'config';
 export const description = 'Get or set Charcoal configuration values.';
-export const builder = args;
 
-const CONFIG_KEYS = [
-  'branchPrefix',
-  'branchDate',
-  'branchReplacement',
-  'tips',
-  'editor',
-  'pager',
-  'restackCommitterDateIsAuthorDate',
-  'submitIncludeCommitMessages',
-] as const;
+export const builder = function (yargs: yargs.Argv): yargs.Argv {
+  return yargs
+    .commandDir('config-commands', {
+      extensions: ['js'],
+    })
+    .options(keyValueArgs)
+    .check((argv) => {
+      if (argv._.length === 1 || argv.list || argv.key) {
+        return true;
+      }
+      return true;
+    });
+};
 
-type ConfigKey = (typeof CONFIG_KEYS)[number];
-
-export const handler = async (argv: argsT): Promise<void> =>
+export const handler = async (argv: KeyValueArgsT): Promise<void> =>
   graphite(argv, canonical, async (context) => {
     if (argv.list || (!argv.key && !argv.value)) {
       context.splog.info(chalk.bold('User configuration:'));

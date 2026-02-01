@@ -10,6 +10,11 @@ export const deprecated = true;
 const COMMAND_RENAMES: Record<string, string> = {
   sync: 'sync',
   init: 'init',
+  owner: 'config repo-owner',
+  name: 'config repo-name',
+  remote: 'config repo-remote',
+  'pr-templates': 'config repo-pr-templates',
+  github: 'config repo-github',
 };
 
 export const builder = function (yargs: Argv): Argv {

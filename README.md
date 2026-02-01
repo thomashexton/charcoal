@@ -71,6 +71,18 @@ The following Graphite features are intentionally not implemented:
 | `gt modify --into` | Amend changes to downstack branch | Not implemented |
 | `gt config` | Interactive TUI menu | Simple `gt config <key> <value>` CLI |
 
+## Deprecated Commands
+
+Charcoal has moved to a flattened command structure. Old nested commands like `gt branch create`, `gt stack submit`, etc. are no longer supported.
+
+If you're migrating from an older version and want help finding the new command equivalents, set:
+
+```bash
+export GT_CLI_SHOW_DEPRECATION_HELP=1
+```
+
+With this enabled, running a deprecated command will show you the new command to use before exiting.
+
 ## Contributing
 
 See [CONTRIBUTING.md](./CONTRIBUTING.md)

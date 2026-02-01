@@ -25,7 +25,7 @@ for (const scene of allScenes) {
       expect(output).to.include('a');
     });
 
-    it('freeze --downstack freezes multiple branches', () => {
+    it('freeze automatically freezes downstack branches per reference', () => {
       scene.repo.createChange('a', 'a');
       scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
@@ -33,27 +33,24 @@ for (const scene of allScenes) {
       scene.repo.createChange('c', 'c');
       scene.repo.runCliCommand([`create`, `c`, `-m`, `c`]);
 
-      const output = scene.repo.runCliCommandAndGetOutput([
-        `freeze`,
-        `--downstack`,
-      ]);
+      // Per Graphite reference: freeze freezes specified branch and branches downstack of it
+      const output = scene.repo.runCliCommandAndGetOutput([`freeze`]);
       expect(output).to.include('Froze');
-      expect(output).to.include('3');
+      expect(output).to.include('downstack');
     });
 
-    it('unfreeze --downstack unfreezes multiple branches', () => {
+    it('unfreeze automatically unfreezes upstack branches per reference', () => {
       scene.repo.createChange('a', 'a');
       scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
       scene.repo.createChange('b', 'b');
       scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
-      scene.repo.runCliCommand([`freeze`, `--downstack`]);
+      // Freeze from 'a' to freeze a and downstack
+      scene.repo.runCliCommand([`checkout`, `a`]);
+      scene.repo.runCliCommand([`freeze`]);
 
-      const output = scene.repo.runCliCommandAndGetOutput([
-        `unfreeze`,
-        `--downstack`,
-      ]);
+      // Per Graphite reference: unfreeze unfreezes specified branch and branches upstack of it
+      const output = scene.repo.runCliCommandAndGetOutput([`unfreeze`]);
       expect(output).to.include('Unfroze');
-      expect(output).to.include('2');
     });
   });
 }

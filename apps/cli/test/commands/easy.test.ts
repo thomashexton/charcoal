@@ -32,7 +32,8 @@ for (const scene of allScenes) {
       scene.repo.createChange('b', 'b');
       scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
-      scene.repo.runCliCommand([`pop`, `--force`]);
+      // pop has no flags - it preserves working tree state per reference
+      scene.repo.runCliCommand([`pop`]);
       expect(scene.repo.currentBranchName()).to.equal('a');
 
       const branches = scene.repo.runGitCommandAndGetOutput([

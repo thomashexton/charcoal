@@ -10,6 +10,9 @@ const schema = t.shape({
   branchReplacement: t.optional(
     t.unionMany([t.literal('_'), t.literal('-'), t.literal('')])
   ),
+  branchLowercase: t.optional(t.boolean),
+  branchReplaceSlashes: t.optional(t.boolean),
+  branchPrefixExplicit: t.optional(t.boolean),
   tips: t.optional(t.boolean),
   editor: t.optional(t.string),
   pager: t.optional(t.string),

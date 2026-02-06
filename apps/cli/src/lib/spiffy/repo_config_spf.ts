@@ -8,6 +8,7 @@ const schema = t.shape({
   owner: t.optional(t.string),
   name: t.optional(t.string),
   trunk: t.optional(t.string),
+  additionalTrunks: t.optional(t.array(t.string)),
   remote: t.optional(t.string),
   lastFetchedPRInfoMs: t.optional(t.number),
   isGithubIntegrationEnabled: t.optional(t.boolean),
@@ -34,6 +35,28 @@ export const repoConfigFactory = spiffy({
 
       setTrunk: (trunk: string) => {
         update((data) => (data.trunk = trunk));
+      },
+
+      addTrunk: (trunk: string) => {
+        update((data) => {
+          const trunks = data.additionalTrunks ?? [];
+          if (!trunks.includes(trunk) && trunk !== data.trunk) {
+            data.additionalTrunks = [...trunks, trunk];
+          }
+        });
+      },
+
+      removeTrunk: (trunk: string) => {
+        update((data) => {
+          const trunks = data.additionalTrunks ?? [];
+          data.additionalTrunks = trunks.filter((t) => t !== trunk);
+        });
+      },
+
+      getAllTrunks: (): string[] => {
+        return [data.trunk, ...(data.additionalTrunks ?? [])].filter(
+          (t): t is string => !!t
+        );
       },
 
       setIsGithubIntegrationEnabled: (isEnabled: boolean) => {
@@ -73,7 +96,7 @@ export const repoConfigFactory = spiffy({
         }
 
         throw new ExitFailedError(
-          "Could not determine the owner of this repo (e.g. 'charcoal' in the repo 'danerwilliams/charcoal'). Please run `gt repo owner --set <owner>` to manually set the repo owner."
+          "Could not determine the owner of this repo (e.g. 'charcoal' in the repo 'danerwilliams/charcoal'). Please run `gt config repo-owner --set <owner>` to manually set the repo owner."
         );
       },
 
@@ -88,7 +111,7 @@ export const repoConfigFactory = spiffy({
         }
 
         throw new ExitFailedError(
-          "Could not determine the name of this repo (e.g. 'charcoal' in the repo 'danerwilliams/charcoal'). Please run `gt repo name --set <owner>` to manually set the repo name."
+          "Could not determine the name of this repo (e.g. 'charcoal' in the repo 'danerwilliams/charcoal'). Please run `gt config repo-name --set <name>` to manually set the repo name."
         );
       },
     } as const;
@@ -110,7 +133,7 @@ function inferRepoGitHubInfo(remote: string): {
   });
 
   const inferError = new ExitFailedError(
-    `Failed to infer the owner and name of this repo from remote ${remote} "${url}". Please run \`gt repo owner --set <owner>\` and \`gt repo name --set <name>\` to manually set the repo owner/name. (e.g. in the repo 'danerwilliams/charcoal', 'charcoal' is the repo owner and 'charcoal' is the repo name)`
+    `Failed to infer the owner and name of this repo from remote ${remote} "${url}". Please run \`gt config repo-owner --set <owner>\` and \`gt config repo-name --set <name>\` to manually set the repo owner/name. (e.g. in the repo 'danerwilliams/charcoal', 'danerwilliams' is the repo owner and 'charcoal' is the repo name)`
   );
   if (!url) {
     throw inferError;

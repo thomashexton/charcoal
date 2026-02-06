@@ -34,12 +34,7 @@ export class TrailingProdScene extends AbstractScene {
 
     this.repo.checkoutBranch('main');
     this.repo.createChangeAndCommit('1', '1');
-    this.repo.runCliCommand([
-      `repo`,
-      `init`,
-      `--trunk`,
-      `main`,
-      `--no-interactive`,
-    ]);
+    this.repo.runCliCommand([`init`, `--trunk`, `main`, `--no-interactive`]);
+    this.pushMainToOrigin();
   }
 }

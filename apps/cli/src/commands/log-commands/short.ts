@@ -4,6 +4,12 @@ import { logShortClassic } from '../../actions/log_short_classic';
 import { graphite } from '../../lib/runner';
 
 const args = {
+  all: {
+    describe: 'Show branches across all configured trunks.',
+    type: 'boolean',
+    alias: 'a',
+    default: false,
+  },
   classic: {
     type: 'boolean',
     default: false,

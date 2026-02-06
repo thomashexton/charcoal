@@ -128,6 +128,7 @@ async function graphiteHelper(
 
     if (
       canonicalName !== 'repo init' &&
+      canonicalName !== 'init' &&
       !context.repoConfig.graphiteInitialized()
     ) {
       context.splog.info(

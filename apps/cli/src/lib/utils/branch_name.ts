@@ -2,7 +2,10 @@ import { TContext, TContextLite } from '../context';
 
 // 255 minus 21 (for 'refs/branch-metadata/')
 const MAX_BRANCH_NAME_BYTE_LENGTH = 234;
-const BRANCH_NAME_REPLACE_REGEX = /[^-_/.a-zA-Z0-9]+/g;
+// Base regex allows alphanumeric, dash, underscore, dot, slash
+const BRANCH_NAME_REPLACE_REGEX_WITH_SLASH = /[^-_/.a-zA-Z0-9]+/g;
+// When replacing slashes, don't allow them
+const BRANCH_NAME_REPLACE_REGEX_NO_SLASH = /[^-_.a-zA-Z0-9]+/g;
 const BRANCH_NAME_IGNORE_REGEX = /[/.]*$/;
 
 export function replaceUnsupportedCharacters(
@@ -10,10 +13,22 @@ export function replaceUnsupportedCharacters(
   context: TContextLite
 ): string {
   const strippedInput = removeUnsupportedTrailingCharacters(input);
-  return strippedInput.replace(
-    BRANCH_NAME_REPLACE_REGEX,
-    getBranchReplacement(context)
-  );
+
+  // Replace slashes if enabled (default: true)
+  const replaceSlashes = context.userConfig.data.branchReplaceSlashes ?? true;
+  const regex = replaceSlashes
+    ? BRANCH_NAME_REPLACE_REGEX_NO_SLASH
+    : BRANCH_NAME_REPLACE_REGEX_WITH_SLASH;
+
+  let result = strippedInput.replace(regex, getBranchReplacement(context));
+
+  // Convert to lowercase if enabled (default: true)
+  const lowercase = context.userConfig.data.branchLowercase ?? true;
+  if (lowercase) {
+    result = result.toLowerCase();
+  }
+
+  return result;
 }
 
 export function removeUnsupportedTrailingCharacters(input: string): string {
@@ -29,15 +44,26 @@ export function newBranchName(
   commitMessage: string | undefined,
   context: TContext
 ): string | undefined {
+  const branchPrefix = context.userConfig.data.branchPrefix || '';
+
   if (branchName) {
-    return replaceUnsupportedCharacters(branchName, context);
+    const sanitized = replaceUnsupportedCharacters(branchName, context);
+    // Apply prefix to explicit branch names if enabled (default: true)
+    const applyPrefixToExplicit =
+      context.userConfig.data.branchPrefixExplicit ?? true;
+    if (
+      applyPrefixToExplicit &&
+      branchPrefix &&
+      !sanitized.startsWith(branchPrefix)
+    ) {
+      return (branchPrefix + sanitized).slice(0, MAX_BRANCH_NAME_BYTE_LENGTH);
+    }
+    return sanitized;
   }
 
   if (!commitMessage) {
     return undefined;
   }
-
-  const branchPrefix = context.userConfig.data.branchPrefix || '';
 
   const date = new Date();
   const branchDate = getBranchDateEnabled(context)

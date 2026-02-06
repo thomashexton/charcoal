@@ -6,6 +6,8 @@ export type TCommitOpts = {
   noEdit?: boolean;
   edit?: boolean;
   patch?: boolean;
+  resetAuthor?: boolean;
+  verbose?: number;
 };
 export function commit(opts: TCommitOpts & { noVerify: boolean }): void {
   runGitCommand({
@@ -17,6 +19,8 @@ export function commit(opts: TCommitOpts & { noVerify: boolean }): void {
       ...(opts.edit ? [`-e`] : []),
       ...(opts.patch ? [`-p`] : []),
       ...(opts.noVerify ? ['-n'] : []),
+      ...(opts.resetAuthor ? ['--reset-author'] : []),
+      ...Array(opts.verbose ?? 0).fill('--verbose'),
     ],
     options: {
       stdio: 'inherit',

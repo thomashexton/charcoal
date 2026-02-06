@@ -24,6 +24,13 @@ const args = {
     type: 'boolean',
     alias: 'b',
   },
+  stat: {
+    describe: `Show a diffstat instead of a full diff. Modifies either --patch or --diff. If neither is passed, implies --diff.`,
+    demandOption: false,
+    default: false,
+    type: 'boolean',
+    alias: 's',
+  },
 } as const;
 type argsT = yargs.Arguments<yargs.InferredOptionTypes<typeof args>>;
 
@@ -34,9 +41,10 @@ export const description = 'Display information about the current branch.';
 export const builder = args;
 export const handler = async (argv: argsT): Promise<void> => {
   return graphite(argv, canonical, async (context) => {
+    const diff = argv.diff || (argv.stat && !argv.patch);
     await showBranchInfo(
       context.engine.currentBranchPrecondition,
-      { patch: argv.patch, diff: argv.diff, body: argv.body },
+      { patch: argv.patch, diff, body: argv.body, stat: argv.stat },
       context
     );
   });

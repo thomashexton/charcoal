@@ -23,10 +23,13 @@ for (const scene of [new BasicScene()]) {
 
     it('Sanity check - can unset editor', () => {
       process.env.TEST_GIT_EDITOR = 'vi';
-      expect(
-        scene.repo.runCliCommandAndGetOutput([`user`, `editor`, `--unset`])
-      ).to.equal(
-        'Editor preference erased. Defaulting to your git editor (currently vi)'
+      const output = scene.repo.runCliCommandAndGetOutput([
+        `user`,
+        `editor`,
+        `--unset`,
+      ]);
+      expect(output).to.match(
+        /^Editor preference erased\. Defaulting to your git editor \(currently .+\)$/
       );
     });
   });

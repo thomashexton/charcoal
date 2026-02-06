@@ -3,7 +3,7 @@ import { allScenes } from '../../lib/scenes/all_scenes';
 import { configureTest } from '../../lib/utils/configure_test';
 
 for (const scene of allScenes) {
-  describe('(${scene}): continue', function () {
+  describe(`(${scene}): continue`, function () {
     configureTest(this, scene);
 
     beforeEach(function () {
@@ -54,7 +54,7 @@ for (const scene of allScenes) {
     describe('During a Grahite initiated rebase', function () {
       beforeEach(function () {
         scene.repo.checkoutBranch('b');
-        expect(() => scene.repo.runCliCommand(['stack', 'restack'])).to.throw();
+        expect(() => scene.repo.runCliCommand(['restack'])).to.throw();
       });
 
       it('Stops during a rebase conflict', function () {

@@ -31,8 +31,8 @@ for (const scene of allScenes) {
       // that here too. Note that these values are meaningless (for now)
       // and just need to exist.
 
-      scene.repo.runCliCommand([`repo`, `owner`, `-s`, `integration_test`]);
-      scene.repo.runCliCommand([`repo`, `name`, `-s`, `integration-test-repo`]);
+      scene.repo.runCliCommand([`config`, `repo-owner`, `-s`, `integration_test`]);
+      scene.repo.runCliCommand([`config`, `repo-name`, `-s`, `integration-test-repo`]);
     });
 
     afterEach(() => {
@@ -41,20 +41,20 @@ for (const scene of allScenes) {
 
     it('Can delete a single merged branch', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       expectBranches(scene.repo, 'a, main');
 
       fakeGitSquashAndMerge(scene.repo, 'a', 'squash');
-      scene.repo.runCliCommand([`repo`, `owner`]);
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`config`, `repo-owner`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
 
       expectBranches(scene.repo, 'main');
     });
 
     it('Can delete a branch marked as merged', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       expectBranches(scene.repo, 'a, main');
 
@@ -64,15 +64,15 @@ for (const scene of allScenes) {
         scene.dir
       );
 
-      scene.repo.runCliCommand([`repo`, `owner`]);
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`config`, `repo-owner`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
 
       expectBranches(scene.repo, 'main');
     });
 
     it('Can delete a branch marked as closed', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       expectBranches(scene.repo, 'a, main');
       writeMetadataRef(
@@ -81,35 +81,27 @@ for (const scene of allScenes) {
         scene.dir
       );
 
-      scene.repo.runCliCommand([`repo`, `owner`]);
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`config`, `repo-owner`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
 
       expectBranches(scene.repo, 'main');
     });
 
     it('Can noop sync if there are no stacks', () => {
-      expect(() =>
-        scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`])
-      ).to.not.throw(Error);
+      expect(() => scene.repo.runCliCommand([`sync`, `-f`])).to.not.throw(Error);
     });
 
     it('Can delete the foundation of a double stack and restack it', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('3', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       expectBranches(scene.repo, 'a, b, main');
 
       fakeGitSquashAndMerge(scene.repo, 'a', 'squash');
-      scene.repo.runCliCommand([
-        `repo`,
-        `sync`,
-        `-f`,
-        `--no-pull`,
-        `--restack`,
-      ]);
+      scene.repo.runCliCommand([`sync`, `-f`, `--restack`]);
 
       expectBranches(scene.repo, 'b, main');
       expectCommits(scene.repo, 'squash, 1');
@@ -120,19 +112,19 @@ for (const scene of allScenes) {
 
     it('Can delete two branches off a three-stack', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('3', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.createChange('4', 'c');
-      scene.repo.runCliCommand([`branch`, `create`, `c`, `-m`, `c`]);
+      scene.repo.runCliCommand([`create`, `c`, `-m`, `c`]);
 
       expectBranches(scene.repo, 'a, b, c, main');
 
       fakeGitSquashAndMerge(scene.repo, 'a', 'squash_a');
       fakeGitSquashAndMerge(scene.repo, 'b', 'squash_b');
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
 
       expectBranches(scene.repo, 'c, main');
       expectCommits(scene.repo, 'squash_b, squash_a, 1');
@@ -140,20 +132,20 @@ for (const scene of allScenes) {
 
     it('Can delete two branches, while syncing inbetween, off a three-stack', async () => {
       scene.repo.createChange('2', 'a');
-      scene.repo.runCliCommand([`branch`, `create`, `a`, `-m`, `a`]);
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
 
       scene.repo.createChange('3', 'b');
-      scene.repo.runCliCommand([`branch`, `create`, `b`, `-m`, `b`]);
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
 
       scene.repo.createChange('4', 'c');
-      scene.repo.runCliCommand([`branch`, `create`, `c`, `-m`, `c`]);
+      scene.repo.runCliCommand([`create`, `c`, `-m`, `c`]);
 
       expectBranches(scene.repo, 'a, b, c, main');
 
       fakeGitSquashAndMerge(scene.repo, 'a', 'squash_a');
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
       fakeGitSquashAndMerge(scene.repo, 'b', 'squash_b');
-      scene.repo.runCliCommand([`repo`, `sync`, `-f`, `--no-pull`]);
+      scene.repo.runCliCommand([`sync`, `-f`]);
 
       expectBranches(scene.repo, 'c, main');
       expectCommits(scene.repo, 'squash_b, squash_a, 1');

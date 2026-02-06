@@ -4,13 +4,13 @@ import { TrailingProdScene } from '../../lib/scenes/trailing_prod_scene';
 import { configureTest } from '../../lib/utils/configure_test';
 
 for (const scene of [new TrailingProdScene()]) {
-  describe(`(${scene}): repo init`, function () {
+  describe(`(${scene}): init`, function () {
     configureTest(this, scene);
 
     it('Can run repo init', () => {
       const repoConfigPath = `${scene.repo.dir}/.git/.graphite_repo_config`;
       fs.removeSync(repoConfigPath);
-      scene.repo.runCliCommand([`repo`, `init`, `--trunk`, `main`]);
+      scene.repo.runCliCommand([`init`, `--trunk`, `main`, `--no-interactive`]);
       const savedConfig = JSON.parse(
         fs.readFileSync(repoConfigPath).toString()
       );
@@ -20,7 +20,6 @@ for (const scene of [new TrailingProdScene()]) {
     it('Falls back to main if non-existent branch is passed in', () => {
       const repoConfigPath = `${scene.repo.dir}/.git/.graphite_repo_config`;
       scene.repo.runCliCommand([
-        `repo`,
         `init`,
         `--trunk`,
         `random`,
@@ -33,10 +32,11 @@ for (const scene of [new TrailingProdScene()]) {
     });
 
     it('Cannot set an invalid trunk if trunk cannot be inferred', () => {
-      scene.repo.runGitCommand([`branch`, `-m`, `main2`]);
+      // Remove remote tracking so trunk cannot be inferred
+      scene.repo.runGitCommand([`remote`, `remove`, `origin`]);
+      scene.repo.runGitCommand([`branch`, `-m`, `main`, `main2`]);
       expect(() =>
         scene.repo.runCliCommand([
-          `repo`,
           `init`,
           `--trunk`,
           `random`,

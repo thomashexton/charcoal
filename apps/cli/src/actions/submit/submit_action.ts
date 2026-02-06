@@ -12,25 +12,49 @@ import {
   footerTitle,
 } from '../create_pr_body_footer';
 import { execFileSync } from 'child_process';
+import { restackBranches } from '../restack';
+
+export type SubmitResult = {
+  submittedPrUrls: string[];
+  submittedPrNumbers: number[];
+};
 
 // eslint-disable-next-line max-lines-per-function
 export async function submitAction(
   args: {
     scope: TScopeSpec;
     editPRFieldsInline: boolean | undefined;
+    editTitle?: boolean | undefined;
+    noEditTitle?: boolean | undefined;
+    editDescription?: boolean | undefined;
+    noEditDescription?: boolean | undefined;
     draft: boolean;
     publish: boolean;
     dryRun: boolean;
     updateOnly: boolean;
     reviewers: string | undefined;
+    teamReviewers?: string | undefined;
     confirm: boolean;
     forcePush: boolean;
     select: boolean;
     always: boolean;
     branch: string | undefined;
+    restack?: boolean | undefined;
+    view?: boolean | undefined;
+    web?: boolean | undefined;
+    comment?: string | undefined;
+    mergeWhenReady?: boolean | undefined;
+    rerequestReview?: boolean | undefined;
+    targetTrunk?: string | undefined;
+    cli?: boolean | undefined;
+    ignoreOutOfSyncTrunk?: boolean | undefined;
   },
   context: TContext
-): Promise<void> {
+): Promise<SubmitResult> {
+  const result: SubmitResult = {
+    submittedPrUrls: [],
+    submittedPrNumbers: [],
+  };
   // Check CLI pre-condition to warn early
   if (args.draft && args.publish) {
     throw new ExitFailedError(
@@ -38,6 +62,42 @@ export async function submitAction(
     );
   }
   const populateRemoteShasPromise = context.engine.populateRemoteShas();
+
+  // Check if trunk is out of sync with remote
+  await populateRemoteShasPromise;
+  const trunkOutOfSync = !context.engine.branchMatchesRemote(
+    context.engine.trunk
+  );
+  if (trunkOutOfSync && !args.ignoreOutOfSyncTrunk) {
+    context.splog.warn(
+      chalk.yellow(
+        `Your local trunk (${context.engine.trunk}) is out of sync with remote.`
+      )
+    );
+    if (context.interactive) {
+      const proceed = (
+        await context.prompts({
+          type: 'confirm',
+          name: 'value',
+          message:
+            'Do you want to continue anyway? (Use --ignore-out-of-sync-trunk to skip this warning)',
+          initial: false,
+        })
+      ).value;
+      if (!proceed) {
+        context.splog.info(
+          chalk.blueBright(
+            'Run `gt sync` to update your trunk before submitting.'
+          )
+        );
+        throw new KilledError();
+      }
+    } else {
+      throw new ExitFailedError(
+        `Trunk is out of sync with remote. Run \`gt sync\` or use --ignore-out-of-sync-trunk to proceed anyway.`
+      );
+    }
+  }
   if (args.dryRun) {
     context.splog.info(
       chalk.yellow(
@@ -70,6 +130,21 @@ export async function submitAction(
     ? await selectBranches(context, allBranchNames)
     : allBranchNames;
 
+  if (args.restack) {
+    context.splog.info(
+      chalk.blueBright('🔄 Restacking branches before submitting...')
+    );
+    context.splog.newline();
+    try {
+      restackBranches([...branchNames], context);
+    } catch (err) {
+      context.splog.warn(
+        'Some branches could not be restacked due to conflicts. Continuing with submission...'
+      );
+    }
+    context.splog.newline();
+  }
+
   context.splog.info(
     chalk.blueBright(
       `🥞 Validating that this Charcoal stack is ready to submit...`
@@ -83,7 +158,6 @@ export async function submitAction(
       '✏️  Preparing to submit PRs for the following branches...'
     )
   );
-  await populateRemoteShasPromise;
   const submissionInfos = await getPRInfoForBranches(
     {
       branchNames: branchNames,
@@ -92,6 +166,7 @@ export async function submitAction(
       publish: args.publish,
       updateOnly: args.updateOnly,
       reviewers: args.reviewers,
+      teamReviewers: args.teamReviewers,
       dryRun: args.dryRun,
       select: args.select,
       always: args.always,
@@ -99,13 +174,46 @@ export async function submitAction(
     context
   );
 
+  // Update dependency tree footers for all branches with existing PRs
+  // This runs before the abort check so footer fixes happen even when no branches need pushing
+  context.splog.info(
+    chalk.blueBright('\n🌳 Updating dependency trees in PR bodies...')
+  );
+
+  for (const branch of branchNames) {
+    const prInfo = context.engine.getPrInfo(branch);
+    if (!prInfo?.number) {
+      continue; // Skip branches without PRs
+    }
+
+    const footer = createPrBodyFooter(context, branch);
+    const updatedBody = updatePrBodyFooter(prInfo.body, footer);
+    const prFooterChanged = updatedBody !== prInfo.body;
+
+    if (prFooterChanged && !args.dryRun) {
+      execFileSync('gh', [
+        'pr',
+        'edit',
+        `${prInfo.number}`,
+        '--body',
+        updatedBody,
+      ]);
+    }
+
+    context.splog.info(
+      `${chalk.green(branch)}: ${prInfo.url} (${
+        prFooterChanged ? chalk.yellow('Updated') : 'No-op'
+      })`
+    );
+  }
+
   if (
     await shouldAbort(
       { ...args, hasAnyPrs: submissionInfos.length > 0 },
       context
     )
   ) {
-    return;
+    return result;
   }
 
   context.splog.info(
@@ -133,43 +241,81 @@ export async function submitAction(
       throw err;
     }
 
-    await submitPullRequest([submissionInfo], context);
+    const prResult = await submitPullRequest([submissionInfo], context);
+    if (prResult) {
+      result.submittedPrUrls.push(prResult.prUrl);
+      result.submittedPrNumbers.push(prResult.prNumber);
+    }
   }
 
-  context.splog.info(
-    chalk.blueBright('\n🌳 Updating dependency trees in PR bodies...')
-  );
-
-  for (const branch of branchNames) {
-    const prInfo = context.engine.getPrInfo(branch);
-    const footer = createPrBodyFooter(context, branch);
-
-    if (!prInfo) {
-      throw new Error(`PR info is undefined for branch ${branch}`);
+  if (args.comment && result.submittedPrNumbers.length > 0) {
+    context.splog.info(chalk.blueBright('\n💬 Adding comments to PRs...'));
+    for (const prNumber of result.submittedPrNumbers) {
+      try {
+        execFileSync('gh', [
+          'pr',
+          'comment',
+          `${prNumber}`,
+          '--body',
+          args.comment,
+        ]);
+        context.splog.info(`Added comment to PR #${prNumber}`);
+      } catch (err) {
+        context.splog.warn(`Failed to add comment to PR #${prNumber}`);
+      }
     }
+  }
 
-    const prFooterChanged = !prInfo.body?.includes(footer);
+  if (args.mergeWhenReady && result.submittedPrNumbers.length > 0) {
+    context.splog.info(chalk.blueBright('\n🔀 Enabling auto-merge for PRs...'));
+    for (const prNumber of result.submittedPrNumbers) {
+      try {
+        execFileSync('gh', [
+          'pr',
+          'merge',
+          `${prNumber}`,
+          '--auto',
+          '--squash',
+        ]);
+        context.splog.info(`Enabled auto-merge for PR #${prNumber}`);
+      } catch (err) {
+        context.splog.warn(
+          `Failed to enable auto-merge for PR #${prNumber}. ` +
+            'This may require admin settings to be enabled on the repository.'
+        );
+      }
+    }
+  }
 
-    if (prFooterChanged) {
-      execFileSync('gh', [
-        'pr',
-        'edit',
-        `${prInfo.number}`,
-        '--body',
-        updatePrBodyFooter(prInfo.body, footer),
-      ]);
-
-      context.splog.info(
-        `${chalk.green(branch)}: ${prInfo.url} (${
-          prFooterChanged ? chalk.yellow('Updated') : 'No-op'
-        })`
-      );
+  if (args.rerequestReview && result.submittedPrNumbers.length > 0) {
+    context.splog.info(
+      chalk.blueBright('\n🔄 Re-requesting reviews for PRs...')
+    );
+    for (const prNumber of result.submittedPrNumbers) {
+      try {
+        execFileSync('gh', [
+          'api',
+          '--method',
+          'POST',
+          `/repos/{owner}/{repo}/pulls/${prNumber}/requested_reviewers`,
+          '-f',
+          'reviewers=[]',
+        ]);
+        context.splog.info(`Re-requested reviews for PR #${prNumber}`);
+      } catch (err) {
+        context.splog.warn(
+          `Failed to re-request reviews for PR #${prNumber}. ` +
+            'You may need to manually re-request reviews.'
+        );
+      }
     }
   }
 
   if (!context.interactive) {
-    return;
+    return result;
   }
+
+  return result;
 }
 
 export function updatePrBodyFooter(
@@ -187,20 +333,18 @@ export function updatePrBodyFooter(
   const escapedTitleText = titleText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
   const escapedFooterText = footerText.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
-  // Match a pattern where there's the main body content, followed by the footer section
-  // The footer section starts with the title text and ends with the footer text
-  const matchExistingFooter = new RegExp(
-    `(?<body>[\\s\\S]*)(?<footer>${escapedTitleText}[\\s\\S]*?${escapedFooterText})$`,
-    's'
+  // Remove ALL instances of the footer section globally.
+  // This handles cases where external tools (e.g., Jira bot) insert content
+  // after the footer, causing duplicates on subsequent runs.
+  // Match optional leading newlines before the title to preserve formatting.
+  const footerPattern = new RegExp(
+    `\\n*${escapedTitleText}[\\s\\S]*?${escapedFooterText}`,
+    'g'
   );
 
-  const match = matchExistingFooter.exec(body);
+  const bodyWithoutFooters = body.replace(footerPattern, '');
 
-  if (match?.groups?.body) {
-    return match.groups.body + footer;
-  }
-
-  return body + footer;
+  return bodyWithoutFooters + footer;
 }
 
 async function selectBranches(

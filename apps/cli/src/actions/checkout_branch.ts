@@ -7,17 +7,35 @@ export async function checkoutBranch(
   {
     branchName,
     showUntracked,
+    showAll: _showAll,
+    stackOnly,
   }: {
     branchName: string | undefined;
     showUntracked?: boolean;
+    showAll?: boolean;
+    stackOnly?: boolean;
   },
   context: TContext
 ): Promise<void> {
   if (!branchName) {
+    let branchFilter: Set<string> | undefined;
+
+    if (stackOnly) {
+      const currentBranch = context.engine.currentBranch;
+      if (currentBranch && !context.engine.isTrunk(currentBranch)) {
+        const stackBranches = context.engine.getRelativeStack(
+          currentBranch,
+          SCOPE.STACK
+        );
+        branchFilter = new Set(stackBranches);
+      }
+    }
+
     branchName = await interactiveBranchSelection(
       {
         message: 'Checkout a branch (autocomplete or arrow keys)',
         showUntracked,
+        branchFilter,
       },
       context
     );

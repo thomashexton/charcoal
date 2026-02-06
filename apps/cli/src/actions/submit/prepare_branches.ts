@@ -37,6 +37,7 @@ export async function getPRInfoForBranches(
     updateOnly: boolean;
     dryRun: boolean;
     reviewers: string | undefined;
+    teamReviewers?: string | undefined;
     select: boolean;
     always: boolean;
   },
@@ -76,6 +77,7 @@ export async function getPRInfoForBranches(
               draft: args.draft,
               publish: args.publish,
               reviewers: args.reviewers,
+              teamReviewers: args.teamReviewers,
             },
             context
           )
@@ -83,6 +85,7 @@ export async function getPRInfoForBranches(
             title: '',
             body: '',
             reviewers: [],
+            teamReviewers: [],
             draft: false,
           };
 
@@ -102,6 +105,7 @@ export async function getPRInfoForBranches(
                 draft: args.draft,
                 publish: args.publish,
                 reviewers: args.reviewers,
+                teamReviewers: args.teamReviewers,
               },
               context
             )),
@@ -185,12 +189,14 @@ async function getPRCreationInfo(
     draft: boolean;
     publish: boolean;
     reviewers: string | undefined;
+    teamReviewers: string | undefined;
   },
   context: TContext
 ): Promise<{
   title: string;
   body: string;
   reviewers: string[];
+  teamReviewers: string[];
   draft: boolean;
 }> {
   if (args.editPRFieldsInline) {
@@ -232,6 +238,8 @@ async function getPRCreationInfo(
     context
   );
 
+  const teamReviewers = await getReviewers(args.teamReviewers);
+
   const createAsDraft = args.publish
     ? false
     : args.draft || !context.interactive
@@ -242,6 +250,7 @@ async function getPRCreationInfo(
     title: submitInfo.title,
     body: submitInfo.body,
     reviewers,
+    teamReviewers,
     draft: createAsDraft,
   };
 }
@@ -253,12 +262,14 @@ async function getPRUpdateInfo(
     draft: boolean;
     publish: boolean;
     reviewers: string | undefined;
+    teamReviewers: string | undefined;
   },
   context: TContext
 ): Promise<{
   title?: string;
   body?: string;
   reviewers: string[];
+  teamReviewers: string[];
   draft: boolean | undefined;
 }> {
   const submitInfo: TBranchPRInfo = {};
@@ -300,12 +311,15 @@ async function getPRUpdateInfo(
     context
   );
 
+  const teamReviewers = await getReviewers(args.teamReviewers);
+
   const draft = args.draft ? true : args.publish ? false : undefined;
 
   return {
     title: submitInfo.title,
     body: submitInfo.body,
     reviewers,
+    teamReviewers,
     draft,
   };
 }

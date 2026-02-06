@@ -8,6 +8,7 @@ type TBranchNavigation =
   | {
       direction: 'UP' | 'DOWN';
       numSteps: number;
+      towards?: string;
     }
   | { direction: 'TOP' | 'BOTTOM' };
 export async function switchBranchAction(
@@ -25,14 +26,12 @@ export async function switchBranchAction(
     await checkoutBranch({ branchName: newBranchName }, context);
     return;
   }
-  context.splog.info(
-    `Already at the ${
-      branchNavigation.direction === 'DOWN' ||
-      branchNavigation.direction === 'BOTTOM'
-        ? 'bottom most'
-        : 'top most'
-    } branch in the stack.`
-  );
+  const position =
+    branchNavigation.direction === 'DOWN' ||
+    branchNavigation.direction === 'BOTTOM'
+      ? 'bottom'
+      : 'top';
+  throw new ExitFailedError(`Already at the ${position} of the stack.`);
 }
 
 async function traverseBranches(

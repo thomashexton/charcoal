@@ -4,7 +4,7 @@ import { TBranchPRInfo } from '../lib/engine/metadata_ref';
 
 export async function showBranchInfo(
   branchName: string,
-  opts: { patch: boolean; diff: boolean; body: boolean },
+  opts: { patch: boolean; diff: boolean; body: boolean; stat: boolean },
   context: TContext
 ): Promise<void> {
   const output = getBranchInfo({ branchName }, context);
@@ -27,11 +27,19 @@ export async function showBranchInfo(
   }
 
   output.push('');
-  output.push(context.engine.showCommits(branchName, opts.patch && !opts.diff));
+  // Only pass stat to showCommits if we're not also showing a diff (avoids duplicate stat)
+  const statInCommits = opts.stat && !opts.diff;
+  output.push(
+    context.engine.showCommits(
+      branchName,
+      opts.patch && !opts.diff,
+      statInCommits
+    )
+  );
 
   if (opts.diff) {
     output.push('');
-    output.push(context.engine.showDiff(branchName));
+    output.push(context.engine.showDiff(branchName, opts.stat));
   }
 
   context.splog.page(output.join('\n'));

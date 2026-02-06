@@ -1,5 +1,6 @@
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
+import { logOperation } from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { newBranchName } from '../lib/utils/branch_name';
 import { restackBranches } from './restack';
@@ -9,8 +10,10 @@ export async function createBranchAction(
     branchName?: string;
     message?: string;
     all?: boolean;
+    update?: boolean;
     insert?: boolean;
     patch?: boolean;
+    verbose?: number;
   },
   context: TContext
 ): Promise<void> {
@@ -21,10 +24,19 @@ export async function createBranchAction(
     );
   }
 
+  const parentBranchName = context.engine.currentBranchPrecondition;
   context.engine.checkoutNewBranch(branchName);
+
+  logOperation({
+    type: 'create',
+    branchName: branchName,
+    data: { parentBranch: parentBranchName },
+  });
 
   if (opts.all) {
     context.engine.addAll();
+  } else if (opts.update) {
+    context.engine.addAllTracked();
   }
 
   if (context.engine.detectStagedChanges()) {
@@ -32,6 +44,7 @@ export async function createBranchAction(
       context.engine.commit({
         message: opts.message,
         patch: !opts.all && opts.patch,
+        verbose: opts.verbose,
       });
     } catch (e) {
       try {

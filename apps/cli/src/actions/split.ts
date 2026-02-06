@@ -1,3 +1,4 @@
+import { spawnSync } from 'child_process';
 import chalk from 'chalk';
 import { GRAPHITE_COLORS } from '../lib/colors';
 import { TContext } from '../lib/context';
@@ -8,6 +9,20 @@ import { replaceUnsupportedCharacters } from '../lib/utils/branch_name';
 import { clearPromptResultLine } from '../lib/utils/prompts_helpers';
 import { restackBranches } from './restack';
 import { trackBranch } from './track_branch';
+
+function matchesPattern(filePath: string, pattern: string): boolean {
+  // Convert glob pattern to regex
+  // Supports: *, **, ?
+  const regexPattern = pattern
+    .replace(/\./g, '\\.') // Escape dots
+    .replace(/\*\*/g, '{{GLOBSTAR}}') // Temporarily replace **
+    .replace(/\*/g, '[^/]*') // * matches anything except /
+    .replace(/\?/g, '.') // ? matches single char
+    .replace(/\{\{GLOBSTAR\}\}/g, '.*'); // ** matches anything including /
+
+  const regex = new RegExp(`^${regexPattern}$`);
+  return regex.test(filePath);
+}
 
 type TSplit = {
   // list of branch names from oldest to newest
@@ -21,10 +36,14 @@ type TSplit = {
   branchPoints: number[];
 };
 export async function splitCurrentBranch(
-  args: { style: 'hunk' | 'commit' | undefined },
+  args: {
+    style: 'hunk' | 'commit' | 'file' | undefined;
+    filePatterns?: string[];
+  },
   context: TContext
 ): Promise<void> {
-  if (!context.interactive) {
+  // File mode can run non-interactively
+  if (!context.interactive && args.style !== 'file') {
     throw new PreconditionsFailedError(
       'This command must be run in interactive mode.'
     );
@@ -38,6 +57,30 @@ export async function splitCurrentBranch(
       { branchName: branchToSplit, parentBranchName: undefined, force: false },
       context
     );
+  }
+
+  // Handle file split separately (can be non-interactive)
+  if (args.style === 'file') {
+    if (!args.filePatterns || args.filePatterns.length === 0) {
+      throw new PreconditionsFailedError(
+        'File patterns are required for --by-file split.'
+      );
+    }
+    // splitByFile handles everything internally including metadata updates
+    await splitByFile(branchToSplit, args.filePatterns, context);
+
+    // Rebuild engine cache after git operations
+    context.engine.rebuild();
+
+    // Restack any upstack branches
+    const children = context.engine.getRelativeStack(
+      branchToSplit,
+      SCOPE.UPSTACK_EXCLUSIVE
+    );
+    if (children.length > 0) {
+      restackBranches(children, context);
+    }
+    return;
   }
 
   // If user did not select a style, prompt unless there is only one commit
@@ -362,4 +405,168 @@ function getInitialNextBranchName(
   return branchNames.includes(originalBranchName)
     ? getInitialNextBranchName(`${originalBranchName}_split`, branchNames)
     : originalBranchName;
+}
+
+interface SplitByFileContext {
+  branchToSplit: string;
+  parentBranch: string;
+  newBranchName: string;
+  originalHead: string;
+  matchingFiles: { path: string; status: string }[];
+  nonMatchingFiles: { path: string; status: string }[];
+  commitMessage: string;
+}
+
+function createNewBranchWithMatchingFiles(ctx: SplitByFileContext): void {
+  spawnSync('git', ['checkout', ctx.parentBranch], { stdio: 'pipe' });
+  spawnSync('git', ['checkout', '-b', ctx.newBranchName], { stdio: 'pipe' });
+
+  for (const file of ctx.matchingFiles) {
+    if (file.status === 'deleted') {
+      spawnSync('git', ['rm', '-f', file.path], { stdio: 'pipe' });
+    } else {
+      spawnSync('git', ['checkout', ctx.originalHead, '--', file.path], {
+        stdio: 'pipe',
+      });
+    }
+  }
+
+  spawnSync('git', ['add', '-A'], { stdio: 'pipe' });
+  const result = spawnSync(
+    'git',
+    ['commit', '-m', ctx.commitMessage, '--allow-empty'],
+    { stdio: 'pipe' }
+  );
+
+  if (result.status !== 0) {
+    spawnSync('git', ['checkout', ctx.branchToSplit], { stdio: 'pipe' });
+    spawnSync('git', ['branch', '-D', ctx.newBranchName], { stdio: 'pipe' });
+    throw new PreconditionsFailedError(
+      `Failed to create commit for split files.`
+    );
+  }
+}
+
+function rewriteOriginalBranch(
+  ctx: SplitByFileContext,
+  rewriteMessage: string
+): void {
+  spawnSync('git', ['checkout', ctx.branchToSplit], { stdio: 'pipe' });
+  spawnSync('git', ['reset', '--soft', ctx.newBranchName], { stdio: 'pipe' });
+
+  for (const file of ctx.nonMatchingFiles) {
+    if (file.status === 'deleted') {
+      spawnSync('git', ['rm', '-f', file.path], { stdio: 'pipe' });
+    } else {
+      spawnSync('git', ['checkout', ctx.originalHead, '--', file.path], {
+        stdio: 'pipe',
+      });
+    }
+  }
+
+  for (const file of ctx.matchingFiles) {
+    if (file.status !== 'deleted') {
+      if (file.status === 'added') {
+        spawnSync('git', ['rm', '-f', file.path], { stdio: 'pipe' });
+      } else {
+        spawnSync('git', ['checkout', ctx.newBranchName, '--', file.path], {
+          stdio: 'pipe',
+        });
+      }
+    }
+  }
+
+  spawnSync('git', ['add', '-A'], { stdio: 'pipe' });
+  spawnSync('git', ['commit', '-m', rewriteMessage, '--allow-empty'], {
+    stdio: 'pipe',
+  });
+}
+
+async function splitByFile(
+  branchToSplit: string,
+  filePatterns: string[],
+  context: TContext
+): Promise<void> {
+  const parentBranch = context.engine.getParentPrecondition(branchToSplit);
+  const changedFiles = context.engine.getChangedFiles(branchToSplit);
+
+  const matchingFiles = changedFiles.filter((file) =>
+    filePatterns.some((pattern) => matchesPattern(file.path, pattern))
+  );
+
+  if (matchingFiles.length === 0) {
+    throw new PreconditionsFailedError(
+      `No files match the patterns: ${filePatterns.join(', ')}\n` +
+        `Changed files: ${changedFiles.map((f) => f.path).join(', ')}`
+    );
+  }
+
+  const nonMatchingFiles = changedFiles.filter(
+    (file) =>
+      !filePatterns.some((pattern) => matchesPattern(file.path, pattern))
+  );
+
+  if (nonMatchingFiles.length === 0) {
+    throw new PreconditionsFailedError(
+      `All files match the patterns. Nothing would remain in the original branch.`
+    );
+  }
+
+  context.splog.info(
+    `Splitting ${matchingFiles.length} file(s) into new parent branch`
+  );
+  context.splog.info(
+    `Keeping ${nonMatchingFiles.length} file(s) in ${branchToSplit}`
+  );
+
+  const newBranchName = context.interactive
+    ? await promptNextBranchName(
+        { branchNames: [], branchToSplit: `${branchToSplit}-files` },
+        context
+      )
+    : `${branchToSplit}-files`;
+
+  const commitMessages = context.engine
+    .getAllCommits(branchToSplit, 'MESSAGE')
+    .reverse();
+  const commitMessage =
+    commitMessages.length === 1
+      ? commitMessages[0]
+      : `Split from ${branchToSplit}: ${filePatterns.join(', ')}`;
+
+  const originalHead = context.engine.getRevision(branchToSplit);
+
+  const ctx: SplitByFileContext = {
+    branchToSplit,
+    parentBranch,
+    newBranchName,
+    originalHead,
+    matchingFiles,
+    nonMatchingFiles,
+    commitMessage,
+  };
+
+  context.splog.info(`Creating branch ${chalk.cyan(newBranchName)}...`);
+  createNewBranchWithMatchingFiles(ctx);
+
+  const rewriteMessage =
+    commitMessages.length === 1
+      ? commitMessages[0]
+      : `Remaining changes from ${branchToSplit}`;
+
+  context.splog.info(`Rewriting ${chalk.cyan(branchToSplit)}...`);
+  rewriteOriginalBranch(ctx, rewriteMessage);
+
+  // Rebuild engine cache to pick up the new branch
+  context.engine.rebuild();
+
+  // Track the new branch with parent
+  context.engine.trackBranch(newBranchName, parentBranch);
+
+  // Update the original branch to point to the new branch as parent
+  context.engine.setParent(branchToSplit, newBranchName);
+
+  context.splog.info(chalk.green(`✓ Split complete.`));
+  context.splog.info(`  New parent: ${chalk.cyan(newBranchName)}`);
+  context.splog.info(`  Updated: ${chalk.cyan(branchToSplit)}`);
 }

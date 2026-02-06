@@ -53,7 +53,9 @@ export const handler = async (argv: argsT): Promise<void> => {
         message: argv.message,
         noEdit: argv['no-edit'] || !argv.edit,
         addAll: argv.all,
+        update: false,
         patch: argv.patch,
+        resetAuthor: false,
       },
       context
     )

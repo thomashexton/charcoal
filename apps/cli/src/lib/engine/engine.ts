@@ -56,8 +56,8 @@ export type TEngine = {
   getStatus: () => TStatusFile[];
   logLong: () => void;
 
-  showCommits: (branchName: string, patch: boolean) => string;
-  showDiff: (branchName: string) => string;
+  showCommits: (branchName: string, patch: boolean, stat: boolean) => string;
+  showDiff: (branchName: string, stat: boolean) => string;
   getDiff: (left: string, right: string | undefined) => string;
   getStackDiff: (branchName: string) => string;
   getParentOrPrev: (branchName: string) => string;
@@ -93,6 +93,7 @@ export type TEngine = {
   squashCurrentBranch: (opts: { message?: string; noEdit?: boolean }) => void;
 
   addAll: () => void;
+  addAllTracked: () => void;
   detach: () => void;
   unbranch: () => void;
   detachAndResetBranchChanges: () => void;
@@ -127,6 +128,8 @@ export type TEngine = {
   isMergedIntoTrunk: (branchName: string) => boolean;
   isBranchFixed: (branchName: string) => boolean;
   isBranchEmpty: (branchName: string) => boolean;
+  isFrozen: (branchName: string) => boolean;
+  setFrozen: (branchName: string, frozen: boolean) => void;
   populateRemoteShas: () => Promise<void>;
   branchMatchesRemote: (branchName: string) => boolean;
 
@@ -362,6 +365,7 @@ export function composeEngine({
       parentBranchName: newCachedMeta.parentBranchName,
       parentBranchRevision: newCachedMeta.parentBranchRevision,
       prInfo: newCachedMeta.prInfo,
+      frozen: newCachedMeta.frozen,
     });
 
     splog.debug(
@@ -518,14 +522,14 @@ export function composeEngine({
     getUnstagedChanges: git.getUnstagedChanges,
     getStatus: git.getStatus,
     logLong: git.logLong,
-    showCommits: (branchName: string, patch: boolean) => {
+    showCommits: (branchName: string, patch: boolean, stat: boolean) => {
       const meta = assertBranchIsValidOrTrunkAndGetMeta(branchName);
       return git.showCommits(
         meta.validationResult === 'TRUNK'
           ? `${branchName}~`
           : meta.parentBranchRevision,
         branchName,
-        patch
+        { patch, stat }
       );
     },
     getChangedFiles: (branchName: string) => {
@@ -539,13 +543,14 @@ export function composeEngine({
     },
     getFileContents: git.getFileContents,
     restoreFile: git.restoreFile,
-    showDiff: (branchName: string) => {
+    showDiff: (branchName: string, stat: boolean) => {
       const meta = assertBranchIsValidOrTrunkAndGetMeta(branchName);
       return git.showDiff(
         meta.validationResult === 'TRUNK'
           ? `${branchName}~`
           : meta.parentBranchRevision,
-        branchName
+        branchName,
+        stat
       );
     },
     getDiff: git.getDiff,
@@ -587,7 +592,12 @@ export function composeEngine({
     getCommitAuthor: git.getCommitAuthor,
     getPrInfo: (branchName: string) => {
       const meta = cache.branches[branchName];
-      return meta?.validationResult === 'TRUNK' ? undefined : meta?.prInfo;
+      if (meta?.validationResult === 'TRUNK') {
+        return undefined;
+      }
+      const prInfo = meta?.prInfo;
+      // Only return prInfo if it has a PR number (i.e., a PR actually exists)
+      return prInfo?.number !== undefined ? prInfo : undefined;
     },
     upsertPrInfo: (branchName: string, prInfo: Partial<TBranchPRInfo>) => {
       const meta = cache.branches[branchName];
@@ -749,6 +759,7 @@ export function composeEngine({
       };
     },
     addAll: git.addAll,
+    addAllTracked: git.addAllTracked,
     detach() {
       const branchName = getCurrentBranchOrThrow();
       const cachedMeta = assertBranchIsValidAndNotTrunkAndGetMeta(branchName);
@@ -899,6 +910,20 @@ export function composeEngine({
       assertBranch(branchName);
       const cachedMeta = assertBranchIsValidAndNotTrunkAndGetMeta(branchName);
       return git.isDiffEmpty(branchName, cachedMeta.parentBranchRevision);
+    },
+    isFrozen: (branchName: string) => {
+      const meta = cache.branches[branchName];
+      return meta?.frozen ?? false;
+    },
+    setFrozen: (branchName: string, frozen: boolean) => {
+      const meta = cache.branches[branchName];
+      if (meta?.validationResult !== 'VALID') {
+        return;
+      }
+      updateMeta(branchName, {
+        ...meta,
+        frozen,
+      });
     },
     populateRemoteShas: async () => {
       await git.populateRemoteShas(remote);

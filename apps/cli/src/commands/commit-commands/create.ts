@@ -38,6 +38,7 @@ export const handler = async (argv: argsT): Promise<void> => {
       {
         message: argv.message,
         addAll: argv.all,
+        update: false,
         patch: argv.patch,
       },
       context

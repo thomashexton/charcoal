@@ -21,10 +21,15 @@ type TSubmittedPR = {
   response: TSubmittedPRResponse;
 };
 
+export type SubmitPullRequestResult = {
+  prUrl: string;
+  prNumber: number;
+};
+
 export async function submitPullRequest(
   submissionInfo: TPRSubmissionInfo,
   context: TContext
-): Promise<void> {
+): Promise<SubmitPullRequestResult> {
   const pr = await requestServerToSubmitPR({
     submissionInfo,
   });
@@ -55,6 +60,11 @@ export async function submitPullRequest(
       created: chalk.green,
     }[pr.response.status](pr.response.status)})`
   );
+
+  return {
+    prUrl: pr.response.prURL,
+    prNumber: pr.response.prNumber,
+  };
 }
 
 async function requestServerToSubmitPR({

@@ -7,8 +7,10 @@ import { restackBranches } from './restack';
 export function commitCreateAction(
   opts: {
     addAll: boolean;
+    update: boolean;
     patch: boolean;
     message?: string;
+    verbose?: number;
   },
   context: TContext
 ): void {
@@ -18,12 +20,15 @@ export function commitCreateAction(
 
   if (opts.addAll) {
     context.engine.addAll();
+  } else if (opts.update) {
+    context.engine.addAllTracked();
   }
 
   ensureSomeStagedChangesPrecondition(context);
   context.engine.commit({
     message: opts.message,
-    patch: !opts.addAll && opts.patch,
+    patch: !opts.addAll && !opts.update && opts.patch,
+    verbose: opts.verbose,
   });
 
   restackBranches(

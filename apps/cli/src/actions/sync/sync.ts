@@ -14,14 +14,15 @@ export async function syncAction(
     delete: boolean;
     showDeleteProgress: boolean;
     restack: boolean;
+    all?: boolean;
   },
   context: TContext
 ): Promise<void> {
+  // Note: --all flag is accepted but only single trunk is currently supported
   uncommittedTrackedChangesPrecondition();
 
   if (opts.pull) {
     await pullTrunk(opts.force, context);
-    context.splog.tip('You can skip pulling trunk with the `--no-pull` flag.');
   }
 
   const branchesToRestack: string[] = [];
@@ -36,21 +37,11 @@ export async function syncAction(
       { showDeleteProgress: opts.showDeleteProgress, force: opts.force },
       context
     );
-    context.splog.tip(
-      [
-        'You can skip deleting branches with the `--no-delete` flag.',
-        ...(opts.force
-          ? []
-          : [
-              'Try the `--force` flag to delete merged branches without prompting for each.',
-            ]),
-        ...(opts.restack
-          ? []
-          : [
-              'Try the `--restack` flag to automatically restack the current stack as well as any stacks with deleted branches.',
-            ]),
-      ].join('\n')
-    );
+    if (!opts.force) {
+      context.splog.tip(
+        'Try the `--force` flag to delete merged branches without prompting for each.'
+      );
+    }
     if (!opts.restack) {
       return;
     }
@@ -62,9 +53,6 @@ export async function syncAction(
       .forEach((branchName) => branchesToRestack.push(branchName));
   }
   if (!opts.restack) {
-    context.splog.tip(
-      'Try the `--restack` flag to automatically restack the current stack.'
-    );
     return;
   }
 

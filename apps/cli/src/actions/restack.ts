@@ -22,6 +22,11 @@ export function restackBranches(
       continue;
     }
 
+    if (context.engine.isFrozen(branchName)) {
+      context.splog.info(`Skipping frozen branch: ${chalk.cyan(branchName)}`);
+      continue;
+    }
+
     const result = context.engine.restackBranch(branchName);
     context.splog.debug(`${result}: ${branchName}`);
     switch (result.result) {

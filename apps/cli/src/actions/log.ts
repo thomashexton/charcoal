@@ -69,10 +69,11 @@ export async function interactiveBranchSelection(
     message: string;
     omitCurrentBranch?: boolean;
     showUntracked?: boolean;
+    branchFilter?: Set<string>;
   },
   context: TContext
 ): Promise<string> {
-  const choices = getStackLines(
+  let choices = getStackLines(
     {
       short: true,
       reverse: false,
@@ -98,6 +99,15 @@ export async function interactiveBranchSelection(
           }))
         : []
     );
+
+  if (opts.branchFilter) {
+    choices = choices.filter(
+      (choice) =>
+        opts.branchFilter!.has(choice.value) ||
+        context.engine.isTrunk(choice.value)
+    );
+  }
+
   const indexOfCurrentIfPresent = choices.findIndex(
     (choice) =>
       choice.value ===

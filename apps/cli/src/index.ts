@@ -24,10 +24,16 @@ process.on('uncaughtException', (err) => {
 });
 
 void yargs(getYargsInput())
-  .commandDir('commands')
+  .commandDir('commands', {
+    extensions: ['js'],
+    exclude: /^_deprecated$/,
+  })
+  .commandDir('commands/_deprecated', {
+    extensions: ['js'],
+  })
   .help()
   .usage(
-    'Charcoal is a command line tool that makes working with stacked changes fast & intuitive.\n\nhttps://docs.graphite.dev/guides/graphite-cli'
+    'Charcoal is a command line tool that makes working with stacked changes fast & intuitive.\n\nhttps://github.com/withgraphite/graphite-cli'
   )
   .options(globalArgumentsOptions)
   .global(Object.keys(globalArgumentsOptions))

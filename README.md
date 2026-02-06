@@ -34,9 +34,58 @@ The Graphite CLI does not need to depend on Graphite's API, so this project allo
 
 <https://graphite.dev/docs/graphite-cli/>
 
-Right now, the Graphite Docs are more or less in sync with the features available in Charcoal.
+The Graphite Docs cover most commands available in Charcoal. See the compatibility section below for differences.
 
-As Graphite continues to develop their private version of the CLI, however, these will become out of sync. Ideally we can add our own open source docs to accompany this project.
+## Graphite CLI Compatibility
+
+Charcoal aims to be compatible with the official Graphite CLI. Most commands work identically.
+
+### Fully Compatible Commands
+
+- **Branch creation & modification**: `gt create`, `gt modify`, `gt fold`, `gt split`, `gt squash`, `gt absorb`
+- **Navigation**: `gt up`, `gt down`, `gt top`, `gt bottom`, `gt checkout`
+- **Stack management**: `gt restack`, `gt move`, `gt reorder`, `gt delete`, `gt rename`
+- **Syncing & submission**: `gt submit`, `gt sync`, `gt get`
+- **Viewing**: `gt log`, `gt info`
+- **Tracking**: `gt track`, `gt untrack`, `gt unlink`
+- **Collaboration**: `gt freeze`, `gt unfreeze`
+- **Recovery**: `gt undo`, `gt abort`, `gt continue`, `gt pop`
+- **Utilities**: `gt init`, `gt auth`, `gt config`, `gt revert`
+
+### Excluded Features
+
+The following Graphite features are intentionally not implemented:
+
+| Feature | Reason |
+|---------|--------|
+| AI features (`--ai` flags) | Requires Graphite server |
+| `gt merge` command | Requires Graphite merge queue |
+| `gt dash` command | Opens Graphite web dashboard |
+| `gt guide` command | Interactive tutorials not ported |
+
+### Additional Charcoal Features
+
+| Feature | Description |
+|---------|-------------|
+| `gt trunk --remove <branch>` | CLI equivalent of Graphite's interactive "Remove configured trunk" menu option |
+| `gt undo --list` | View operation history without undoing |
+
+### Known Differences
+
+| Feature | Graphite | Charcoal |
+|---------|----------|----------|
+| `gt undo` | Full operation log with inverse operations | Hybrid: operation log for display + git reflog for undo |
+| `gt config` | Interactive TUI menu | Simple `gt config <key> <value>` CLI |
+
+## Deprecated Commands
+
+Charcoal has moved to a flattened command structure. Old nested commands like `gt branch create`, `gt stack submit`, etc. are no longer supported.
+
+Running a deprecated command will show a warning with the new command to use. To hide these warnings, set:
+
+```bash
+export GT_CLI_HIDE_DEPRECATION_WARNINGS=1
+```
 
 ## Contributing
 

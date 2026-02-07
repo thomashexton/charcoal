@@ -459,5 +459,49 @@ for (const scene of allScenes) {
       scene.repo.checkoutBranch('c');
       expectCommits(scene.repo, 'c, b, a, 1');
     });
+
+    it('commit create is blocked during rebase', () => {
+      scene.repo.createChange('a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      scene.repo.checkoutBranch('a');
+      scene.repo.createChangeAndAmend('1');
+
+      expect(() =>
+        scene.repo.runCliCommand(['restack', '-q'])
+      ).to.throw();
+      expect(scene.repo.rebaseInProgress()).to.be.true;
+
+      expect(() =>
+        scene.repo.runCliCommand(['commit', 'create', '-m', 'x'])
+      ).to.throw();
+
+      scene.repo.runGitCommand(['rebase', '--abort']);
+    });
+
+    it('commit amend is blocked during rebase', () => {
+      scene.repo.createChange('a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      scene.repo.checkoutBranch('a');
+      scene.repo.createChangeAndAmend('1');
+
+      expect(() =>
+        scene.repo.runCliCommand(['restack', '-q'])
+      ).to.throw();
+      expect(scene.repo.rebaseInProgress()).to.be.true;
+
+      expect(() =>
+        scene.repo.runCliCommand(['commit', 'amend', '-m', 'x'])
+      ).to.throw();
+
+      scene.repo.runGitCommand(['rebase', '--abort']);
+    });
   });
 }

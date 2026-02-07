@@ -415,5 +415,36 @@ for (const scene of allScenes) {
       const ctx2 = scene.getContext();
       expect(ctx2.engine.getPrInfo('a')).to.be.undefined;
     });
+
+    it('split --by-file errors with uncommitted tracked changes', () => {
+      scene.repo.createChange('a', 'src');
+      scene.repo.createChange('b', 'test');
+      scene.repo.runCliCommand([`create`, `feat`, `-m`, `feat`]);
+
+      scene.repo.createChange('modified', 'src');
+
+      expect(() =>
+        scene.repo.runCliCommand([
+          `split`,
+          `--by-file`,
+          `test_test.txt`,
+          `--no-interactive`,
+        ])
+      ).to.throw();
+    });
+
+    it('move errors with uncommitted tracked changes', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b', 'b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      scene.repo.createChange('modified', 'b');
+
+      expect(() =>
+        scene.repo.runCliCommand([`move`, `--onto`, `main`])
+      ).to.throw();
+    });
   });
 }

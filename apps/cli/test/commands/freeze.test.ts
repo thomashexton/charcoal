@@ -79,5 +79,26 @@ for (const scene of allScenes) {
       const context = scene.getContext();
       expect(context.engine.isFrozen('a')).to.be.false;
     });
+
+    it('restack skips frozen branches', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b', 'b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      scene.repo.runCliCommand([`checkout`, `a`]);
+      scene.repo.runCliCommand([`freeze`]);
+
+      scene.repo.checkoutBranch('main');
+      scene.repo.createChangeAndCommit('1.5', '1.5');
+
+      scene.repo.checkoutBranch('b');
+      scene.repo.runCliCommand(['restack', '--stack', '-q']);
+
+      // a should still be frozen and not restacked
+      const context = scene.getContext();
+      expect(context.engine.isFrozen('a')).to.be.true;
+    });
   });
 }

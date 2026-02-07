@@ -41,6 +41,35 @@ for (const scene of allScenes) {
       ]);
     });
 
+    it('create errors when branch name already exists', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.checkoutBranch('main');
+      scene.repo.createChange('b', 'b');
+
+      expect(() =>
+        scene.repo.runCliCommand([`create`, `a`, `-m`, `b`])
+      ).to.throw();
+
+      // Should stay on main, not switch to the existing branch
+      expect(scene.repo.currentBranchName()).to.equal('main');
+    });
+
+    it('rename to existing branch name errors', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b', 'b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      expect(() =>
+        scene.repo.runCliCommand([`rename`, `a`])
+      ).to.throw();
+
+      expect(scene.repo.currentBranchName()).to.equal('b');
+    });
+
     it('create with --insert restacks parent children', () => {
       scene.repo.createChange('a', 'a');
       scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);

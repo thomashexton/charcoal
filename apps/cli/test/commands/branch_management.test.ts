@@ -105,6 +105,24 @@ for (const scene of allScenes) {
       expect(branches).to.equal('');
     });
 
+    it('delete current branch checks out parent', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+      scene.repo.createChange('b', 'b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      expect(scene.repo.currentBranchName()).to.equal('b');
+      scene.repo.runCliCommand([`delete`, `--force`]);
+      expect(scene.repo.currentBranchName()).to.equal('a');
+
+      const branches = scene.repo.runGitCommandAndGetOutput([
+        'branch',
+        '--list',
+        'b',
+      ]);
+      expect(branches).to.equal('');
+    });
+
     it('rename renames the current branch', () => {
       scene.repo.createChange('a', 'a');
       scene.repo.runCliCommand([`create`, `old-name`, `-m`, `a`]);

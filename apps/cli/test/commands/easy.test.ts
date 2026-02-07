@@ -51,9 +51,10 @@ for (const scene of allScenes) {
     });
 
     it('config --list shows configuration', () => {
+      scene.repo.runCliCommand([`config`, `branch-prefix`, `--set`, `user/`]);
       const output = scene.repo.runCliCommandAndGetOutput([`config`, `--list`]);
       expect(output).to.include('User configuration');
-      expect(output).to.include('branchPrefix');
+      expect(output).to.include('branch-prefix');
     });
   });
 }

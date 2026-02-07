@@ -60,7 +60,7 @@ for (const scene of allScenes) {
 
       writeMetadataRef(
         'a',
-        { ...readMetadataRef('a', scene.dir), prInfo: { state: 'MERGED' } },
+        { ...readMetadataRef('a', scene.dir), prInfo: { number: 1, state: 'MERGED' } },
         scene.dir
       );
 
@@ -77,7 +77,7 @@ for (const scene of allScenes) {
       expectBranches(scene.repo, 'a, main');
       writeMetadataRef(
         'a',
-        { ...readMetadataRef('a', scene.dir), prInfo: { state: 'CLOSED' } },
+        { ...readMetadataRef('a', scene.dir), prInfo: { number: 2, state: 'CLOSED' } },
         scene.dir
       );
 

@@ -18,6 +18,7 @@ const schema = t.shape({
   pager: t.optional(t.string),
   restackCommitterDateIsAuthorDate: t.optional(t.boolean),
   submitIncludeCommitMessages: t.optional(t.boolean),
+  dashUrl: t.optional(t.string),
   connectCliToLocalServer: t.optional(t.boolean),
   gtiConfigs: t.optional(
     t.array(

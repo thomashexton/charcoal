@@ -355,6 +355,39 @@ for (const scene of allScenes) {
       expectCommits(scene.repo, 'b, a, 1');
     });
 
+    it('gt abort --force aborts a rebase in progress', () => {
+      scene.repo.createChange('a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.createChange('b');
+      scene.repo.runCliCommand([`create`, `b`, `-m`, `b`]);
+
+      scene.repo.checkoutBranch('a');
+      scene.repo.createChangeAndAmend('1');
+
+      expect(() =>
+        scene.repo.runCliCommand(['restack', '-q'])
+      ).to.throw();
+      expect(scene.repo.rebaseInProgress()).to.be.true;
+
+      scene.repo.runCliCommand(['abort', '--force']);
+
+      expect(scene.repo.rebaseInProgress()).to.be.false;
+      expect(scene.repo.currentBranchName()).to.equal('b');
+
+      scene.repo.checkoutBranch('b');
+      expectCommits(scene.repo, 'b, a, 1');
+    });
+
+    it('gt abort errors when no rebase is in progress', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      expect(() =>
+        scene.repo.runCliCommand(['abort', '--force'])
+      ).to.throw();
+    });
+
     it('Can continue a stack restack with single merge conflict', () => {
       scene.repo.createChange('a');
       scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);

@@ -10,6 +10,7 @@ turbo-build.log
 !.yarn/versions
 .pnp.*
 dist/
+*.tsbuildinfo
 .eslintcache
 .graphite_repo_config
 .idea/*

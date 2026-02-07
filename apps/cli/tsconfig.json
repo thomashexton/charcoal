@@ -13,6 +13,7 @@
     "noUnusedLocals": true,
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
+    "incremental": true,
     "isolatedModules": true,
     "baseUrl": ".",
     "rootDir": ".",

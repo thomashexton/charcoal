@@ -306,5 +306,114 @@ for (const scene of allScenes) {
       scene.repo.checkoutBranch('c');
       expectCommits(scene.repo, 'c, b, a12');
     });
+
+    it('split --by-file moves matching files into new parent branch', () => {
+      scene.repo.createChange('feat-code', 'src');
+      scene.repo.createChange('feat-test', 'test');
+      scene.repo.runCliCommand([`create`, `feat`, `-m`, `feat`]);
+
+      scene.repo.runCliCommand([
+        `split`,
+        `--by-file`,
+        `test_test.txt`,
+        `--no-interactive`,
+      ]);
+
+      expect(scene.repo.currentBranchName()).to.equal('feat');
+
+      const ctx = scene.getContext();
+      const parent = ctx.engine.getParentPrecondition('feat');
+      expect(parent).to.equal('feat-files');
+
+      scene.repo.checkoutBranch('feat-files');
+      const parentFiles = scene.repo.runGitCommandAndGetOutput([
+        'ls-tree',
+        '-r',
+        '--name-only',
+        'HEAD',
+      ]);
+      expect(parentFiles).to.include('test_test.txt');
+      expect(parentFiles).to.not.include('src_test.txt');
+
+      scene.repo.checkoutBranch('feat');
+      const originalFiles = scene.repo.runGitCommandAndGetOutput([
+        'ls-tree',
+        '-r',
+        '--name-only',
+        'HEAD',
+      ]);
+      expect(originalFiles).to.include('src_test.txt');
+      expect(originalFiles).to.not.include('test_test.txt');
+    });
+
+    it('split --by-file errors when no files match', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      expect(() =>
+        scene.repo.runCliCommand([
+          `split`,
+          `--by-file`,
+          `nonexistent.txt`,
+          `--no-interactive`,
+        ])
+      ).to.throw();
+    });
+
+    it('split --by-file errors when all files match', () => {
+      scene.repo.createChange('a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      expect(() =>
+        scene.repo.runCliCommand([
+          `split`,
+          `--by-file`,
+          `test.txt`,
+          `--no-interactive`,
+        ])
+      ).to.throw();
+    });
+
+    it('split --by-file restacks upstack branches', () => {
+      scene.repo.createChange('feat-code', 'src');
+      scene.repo.createChange('feat-test', 'test');
+      scene.repo.runCliCommand([`create`, `feat`, `-m`, `feat`]);
+
+      scene.repo.createChange('child-work', 'child');
+      scene.repo.runCliCommand([`create`, `child`, `-m`, `child`]);
+
+      scene.repo.checkoutBranch('feat');
+      scene.repo.runCliCommand([
+        `split`,
+        `--by-file`,
+        `test_test.txt`,
+        `--no-interactive`,
+      ]);
+
+      scene.repo.checkoutBranch('child');
+      expectCommits(scene.repo, 'child, feat');
+    });
+
+    it('unlink on branch with no PR is a no-op', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      scene.repo.runCliCommand([`unlink`]);
+      expect(scene.repo.currentBranchName()).to.equal('a');
+    });
+
+    it('unlink clears PR info from branch', () => {
+      scene.repo.createChange('a', 'a');
+      scene.repo.runCliCommand([`create`, `a`, `-m`, `a`]);
+
+      const ctx = scene.getContext();
+      ctx.engine.upsertPrInfo('a', { number: 42 });
+      expect(ctx.engine.getPrInfo('a')?.number).to.equal(42);
+
+      scene.repo.runCliCommand([`unlink`]);
+
+      const ctx2 = scene.getContext();
+      expect(ctx2.engine.getPrInfo('a')).to.be.undefined;
+    });
   });
 }

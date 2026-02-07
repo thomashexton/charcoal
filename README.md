@@ -60,13 +60,14 @@ The following Graphite features are intentionally not implemented:
 |---------|--------|
 | AI features (`--ai` flags) | Requires Graphite server |
 | `gt merge` command | Requires Graphite merge queue |
-| `gt dash` command | Opens Graphite web dashboard |
+| `gt dash` command | Opens Graphite web dashboard (Charcoal has its own configurable `gt dash`) |
 | `gt guide` command | Interactive tutorials not ported |
 
 ### Additional Charcoal Features
 
 | Feature | Description |
 |---------|-------------|
+| `gt dash` | Open a user-configured dashboard URL in the browser. Set the URL with `gt config dash-url --set <url>`. |
 | `gt trunk --remove <branch>` | CLI equivalent of Graphite's interactive "Remove configured trunk" menu option |
 | `gt undo --list` | View operation history without undoing |
 

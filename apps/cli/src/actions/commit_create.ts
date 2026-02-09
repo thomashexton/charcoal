@@ -1,5 +1,6 @@
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { ensureSomeStagedChangesPrecondition } from '../lib/preconditions';
 import { BlockedDuringRebaseError } from '../lib/errors';
 import { restackBranches } from './restack';
@@ -24,11 +25,23 @@ export function commitCreateAction(
     context.engine.addAllTracked();
   }
 
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
+
   ensureSomeStagedChangesPrecondition(context);
   context.engine.commit({
     message: opts.message,
     patch: !opts.addAll && !opts.update && opts.patch,
     verbose: opts.verbose,
+  });
+
+  logOperation({
+    type: 'modify',
+    branchName: context.engine.currentBranchPrecondition,
+    data: { action: 'commit' },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
   });
 
   restackBranches(

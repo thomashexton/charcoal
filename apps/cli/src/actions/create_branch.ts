@@ -1,6 +1,6 @@
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation } from '../lib/engine/operation_log';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { newBranchName } from '../lib/utils/branch_name';
 import { restackBranches } from './restack';
@@ -25,13 +25,9 @@ export async function createBranchAction(
   }
 
   const parentBranchName = context.engine.currentBranchPrecondition;
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
   context.engine.checkoutNewBranch(branchName);
-
-  logOperation({
-    type: 'create',
-    branchName: branchName,
-    data: { parentBranch: parentBranchName },
-  });
 
   if (opts.all) {
     context.engine.addAll();
@@ -61,6 +57,15 @@ export async function createBranchAction(
   // The reason we get the list of siblings here instead of having all
   // the `--insert` logic in a separate function is so that we only
   // show the tip if the user creates a branch with siblings.
+
+  logOperation({
+    type: 'create',
+    branchName: branchName,
+    data: { parentBranch: parentBranchName },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
+  });
 
   const siblings = context.engine
     .getChildren(context.engine.getParentPrecondition(branchName))

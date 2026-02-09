@@ -7,6 +7,7 @@ import { KilledError, PreconditionsFailedError } from '../lib/errors';
 import { uncommittedTrackedChangesPrecondition } from '../lib/preconditions';
 import { replaceUnsupportedCharacters } from '../lib/utils/branch_name';
 import { clearPromptResultLine } from '../lib/utils/prompts_helpers';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { restackBranches } from './restack';
 import { trackBranch } from './track_branch';
 
@@ -49,6 +50,8 @@ export async function splitCurrentBranch(
     );
   }
   uncommittedTrackedChangesPrecondition();
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
 
   const branchToSplit = context.engine.currentBranchPrecondition;
 
@@ -80,6 +83,14 @@ export async function splitCurrentBranch(
     if (children.length > 0) {
       restackBranches(children, context);
     }
+    logOperation({
+      type: 'split',
+      branchName: branchToSplit,
+      data: { style: 'file', filePatterns: args.filePatterns },
+      headBefore,
+      headAfter: captureHeadSha(),
+      branchBefore,
+    });
     return;
   }
 
@@ -125,6 +136,15 @@ export async function splitCurrentBranch(
   context.engine.applySplitToCommits({
     branchToSplit,
     ...split,
+  });
+
+  logOperation({
+    type: 'split',
+    branchName: branchToSplit,
+    data: { style: args.style ?? 'commit' },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
   });
 
   restackBranches(children, context);

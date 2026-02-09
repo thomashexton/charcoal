@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { SCOPE } from '../lib/engine/scope_spec';
 import { restackBranches } from './restack';
 
@@ -7,6 +8,8 @@ export function foldCurrentBranch(keep: boolean, context: TContext): void {
   const currentBranchName = context.engine.currentBranchPrecondition;
   const parentBranchName =
     context.engine.getParentPrecondition(currentBranchName);
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
   context.engine.foldCurrentBranch(keep);
   if (keep) {
     context.splog.info(
@@ -24,6 +27,14 @@ export function foldCurrentBranch(keep: boolean, context: TContext): void {
       `To keep the name of the current branch, use the \`--keep\` flag.`
     );
   }
+  logOperation({
+    type: 'fold',
+    branchName: currentBranchName,
+    data: { parentBranch: parentBranchName, keep },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
+  });
   restackBranches(
     context.engine.getRelativeStack(
       context.engine.currentBranchPrecondition,

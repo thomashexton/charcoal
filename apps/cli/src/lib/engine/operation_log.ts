@@ -1,6 +1,8 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { runGitCommand } from '../git/runner';
+import { getCurrentBranchName } from '../git/branch_ops';
+export { getCurrentBranchName };
 
 /**
  * Operation log for tracking what operations were performed (used by `gt undo --list`).
@@ -16,7 +18,8 @@ export type OperationType =
   | 'fold'
   | 'split'
   | 'modify'
-  | 'restack';
+  | 'restack'
+  | 'undo';
 
 export interface Operation {
   id: string;
@@ -24,6 +27,9 @@ export interface Operation {
   type: OperationType;
   branchName: string;
   data: Record<string, unknown>;
+  headBefore?: string;
+  headAfter?: string;
+  branchBefore?: string;
 }
 
 function getOperationLogPath(): string {
@@ -86,4 +92,16 @@ export function popLastOperation(): Operation | undefined {
 
 export function clearOperations(): void {
   writeOperations([]);
+}
+
+export function captureHeadSha(): string | undefined {
+  try {
+    return runGitCommand({
+      args: ['rev-parse', 'HEAD'],
+      onError: 'throw',
+      resource: 'captureHeadSha',
+    }).trim() || undefined;
+  } catch {
+    return undefined;
+  }
 }

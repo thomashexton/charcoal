@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { RebaseConflictError } from '../lib/errors';
 import { persistContinuation } from './persist_continuation';
 import { printConflictStatus } from './print_conflict_status';
@@ -8,6 +9,8 @@ import { restackBranches } from './restack';
 
 export function editBranchAction(context: TContext): void {
   const currentBranchName = context.engine.currentBranchPrecondition;
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
 
   const result = context.engine.rebaseInteractive(currentBranchName);
 
@@ -30,6 +33,15 @@ export function editBranchAction(context: TContext): void {
     );
     throw new RebaseConflictError();
   }
+
+  logOperation({
+    type: 'modify',
+    branchName: currentBranchName,
+    data: { action: 'edit' },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
+  });
 
   restackBranches(
     context.engine.getRelativeStack(

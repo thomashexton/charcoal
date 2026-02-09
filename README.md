@@ -70,13 +70,29 @@ The following Graphite features are intentionally not implemented:
 | `gt dash` | Open a user-configured dashboard URL in the browser. Set the URL with `gt config dash-url --set <url>`. |
 | `gt trunk --remove <branch>` | CLI equivalent of Graphite's interactive "Remove configured trunk" menu option |
 | `gt undo --list` | View operation history without undoing |
+| `gt undo` | Reflog-based undo with annotated operation history (**experimental**) |
 
 ### Known Differences
 
 | Feature | Graphite | Charcoal |
 |---------|----------|----------|
-| `gt undo` | Full operation log with inverse operations | Hybrid: operation log for display + git reflog for undo |
+| `gt undo` | Full operation log with inverse operations | Reflog-based: records operations with commit SHAs and cross-references the git reflog (**experimental**) |
 | `gt config` | Interactive TUI menu | Simple `gt config <key> <value>` CLI |
+
+### Undo (experimental)
+
+`gt undo` uses a reflog-based approach to let you revert Charcoal operations:
+
+- **Operation logging**: All mutating commands (`create`, `delete`, `rename`, `fold`, `split`, `squash`, `amend`, `commit`, `edit`, `move`, and `undo` itself) record the HEAD commit SHA before and after the operation.
+- **Annotated reflog**: `gt undo` displays the git reflog with annotations showing which entries correspond to known Charcoal operations, making it easier to find the right point to reset to. The reflog automatically expands to cover all displayed operations.
+- **Undo suggestions**: For each recorded operation, `gt undo` suggests the exact `git reset --hard` command to reverse it.
+- **Undo is (maybe) undoable**: `gt undo` logs itself, so you can undo an undo, maybe.
+- **History depth**: By default `gt undo` shows the last 5 operations. Use `-n` to go further back (e.g. `gt undo -n 20`). Use `gt undo --list` to view operations without the undo prompt.
+
+⚠️ **Caveats**:
+- Undo uses `git reset --hard`, which moves HEAD and discards working tree changes.
+- Branch metadata (`refs/branch-metadata/`) is stored as independent git refs and is **not** affected by reset. After undoing, metadata may be out of sync — run `gt init` to rebuild it.
+- This is not a full inverse-operation system; it resets git state via the reflog.
 
 ## Deprecated Commands
 

@@ -1,6 +1,7 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import {
   PreconditionsFailedError,
   BlockedDuringRebaseError,
@@ -25,6 +26,8 @@ export async function commitAmendAction(
   }
 
   const currentBranch = context.engine.currentBranchPrecondition;
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
 
   if (opts.into !== undefined) {
     await commitAmendInto(opts, context);
@@ -48,6 +51,15 @@ export async function commitAmendAction(
     patch: !opts.addAll && !opts.update && opts.patch,
     resetAuthor: opts.resetAuthor,
     verbose: opts.verbose,
+  });
+
+  logOperation({
+    type: 'modify',
+    branchName: currentBranch,
+    data: { action: 'amend' },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
   });
 
   if (!opts.noEdit) {

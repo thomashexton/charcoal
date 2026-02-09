@@ -2,7 +2,7 @@ import chalk from 'chalk';
 import { spawnSync } from 'child_process';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation } from '../lib/engine/operation_log';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { restackBranches } from './restack';
 
@@ -18,6 +18,8 @@ export function deleteBranchAction(
 ): void {
   const branchName =
     args.branchName ?? context.engine.currentBranchPrecondition;
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
   if (context.engine.isTrunk(branchName)) {
     throw new ExitFailedError('Cannot delete trunk!');
   }
@@ -59,6 +61,9 @@ export function deleteBranchAction(
       type: 'delete',
       branchName: branch,
       data: { parentBranch, hadPR: !!prInfo },
+      headBefore,
+      headAfter: captureHeadSha(),
+      branchBefore,
     });
     context.splog.info(`Deleted branch ${chalk.red(branch)}`);
   }

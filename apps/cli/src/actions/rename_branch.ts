@@ -1,5 +1,6 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
+import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { replaceUnsupportedCharacters } from '../lib/utils/branch_name';
 
@@ -56,7 +57,17 @@ export async function renameCurrentBranch(
 
   const newBranchName = replaceUnsupportedCharacters(branchName, context);
 
+  const headBefore = captureHeadSha();
+  const branchBefore = getCurrentBranchName();
   context.engine.renameCurrentBranch(newBranchName);
+  logOperation({
+    type: 'rename',
+    branchName: newBranchName,
+    data: { oldBranchName },
+    headBefore,
+    headAfter: captureHeadSha(),
+    branchBefore,
+  });
   context.splog.info(
     `Successfully renamed ${chalk.blueBright(oldBranchName)} to ${chalk.green(
       newBranchName

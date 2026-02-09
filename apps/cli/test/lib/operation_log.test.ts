@@ -8,6 +8,7 @@ import {
   getRecentOperations,
   popLastOperation,
   clearOperations,
+  captureHeadSha,
 } from '../../src/lib/engine/operation_log';
 
 describe('operation_log', function () {
@@ -115,6 +116,31 @@ describe('operation_log', function () {
     expect(content[0].branchName).to.equal('test');
   });
 
+  it('logOperation stores headBefore, headAfter, and branchBefore', function () {
+    logOperation({
+      type: 'create',
+      branchName: 'test-branch',
+      data: {},
+      headBefore: 'abc123',
+      headAfter: 'def456',
+      branchBefore: 'main',
+    });
+
+    const ops = getRecentOperations(1);
+    expect(ops[0].headBefore).to.equal('abc123');
+    expect(ops[0].headAfter).to.equal('def456');
+    expect(ops[0].branchBefore).to.equal('main');
+  });
+
+  it('captureHeadSha returns current HEAD', function () {
+    spawnSync('git', ['commit', '--allow-empty', '-m', 'init'], {
+      cwd: tmpDir.name,
+    });
+    const sha = captureHeadSha();
+    expect(sha).to.be.a('string');
+    expect(sha).to.have.length(40);
+  });
+
   it('handles all operation types', function () {
     const types = [
       'create',
@@ -125,6 +151,7 @@ describe('operation_log', function () {
       'split',
       'modify',
       'restack',
+      'undo',
     ] as const;
 
     types.forEach((type) => {
@@ -132,7 +159,7 @@ describe('operation_log', function () {
     });
 
     const ops = getRecentOperations(10);
-    expect(ops).to.have.length(8);
+    expect(ops).to.have.length(9);
     expect(ops.map((o) => o.type)).to.have.members([...types]);
   });
 });

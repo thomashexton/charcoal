@@ -174,45 +174,39 @@ export async function submitAction(
     context
   );
 
-  // Update dependency tree footers for all branches with existing PRs
-  // This runs before the abort check so footer fixes happen even when no branches need pushing
-  context.splog.info(
-    chalk.blueBright('\n🌳 Updating dependency trees in PR bodies...')
-  );
-
-  for (const branch of branchNames) {
-    const prInfo = context.engine.getPrInfo(branch);
-    if (!prInfo?.number) {
-      continue; // Skip branches without PRs
-    }
-
-    const footer = createPrBodyFooter(context, branch);
-    const updatedBody = updatePrBodyFooter(prInfo.body, footer);
-    const prFooterChanged = updatedBody !== prInfo.body;
-
-    if (prFooterChanged && !args.dryRun) {
-      execFileSync('gh', [
-        'pr',
-        'edit',
-        `${prInfo.number}`,
-        '--body',
-        updatedBody,
-      ]);
-    }
-
-    context.splog.info(
-      `${chalk.green(branch)}: ${prInfo.url} (${
-        prFooterChanged ? chalk.yellow('Updated') : 'No-op'
-      })`
-    );
-  }
-
   if (
     await shouldAbort(
       { ...args, hasAnyPrs: submissionInfos.length > 0 },
       context
     )
   ) {
+    // Even if no branches need pushing, update dependency trees for existing PRs
+    context.splog.info(
+      chalk.blueBright('\n🌳 Updating dependency trees in PR bodies...')
+    );
+    for (const branch of branchNames) {
+      const prInfo = context.engine.getPrInfo(branch);
+      if (!prInfo?.number) {
+        continue;
+      }
+      const footer = createPrBodyFooter(context, branch);
+      const updatedBody = updatePrBodyFooter(prInfo.body, footer);
+      const prFooterChanged = updatedBody !== prInfo.body;
+      if (prFooterChanged && !args.dryRun) {
+        execFileSync('gh', [
+          'pr',
+          'edit',
+          `${prInfo.number}`,
+          '--body',
+          updatedBody,
+        ]);
+      }
+      context.splog.info(
+        `${chalk.green(branch)}: ${prInfo.url} (${
+          prFooterChanged ? chalk.yellow('Updated') : 'No-op'
+        })`
+      );
+    }
     return result;
   }
 
@@ -246,6 +240,35 @@ export async function submitAction(
       result.submittedPrUrls.push(prResult.prUrl);
       result.submittedPrNumbers.push(prResult.prNumber);
     }
+  }
+
+  // Update dependency trees AFTER all PRs have been created/updated
+  // so that newly created PRs are included in the tree
+  context.splog.info(
+    chalk.blueBright('\n🌳 Updating dependency trees in PR bodies...')
+  );
+  for (const branch of branchNames) {
+    const prInfo = context.engine.getPrInfo(branch);
+    if (!prInfo?.number) {
+      continue;
+    }
+    const footer = createPrBodyFooter(context, branch);
+    const updatedBody = updatePrBodyFooter(prInfo.body, footer);
+    const prFooterChanged = updatedBody !== prInfo.body;
+    if (prFooterChanged && !args.dryRun) {
+      execFileSync('gh', [
+        'pr',
+        'edit',
+        `${prInfo.number}`,
+        '--body',
+        updatedBody,
+      ]);
+    }
+    context.splog.info(
+      `${chalk.green(branch)}: ${prInfo.url} (${
+        prFooterChanged ? chalk.yellow('Updated') : 'No-op'
+      })`
+    );
   }
 
   if (args.comment && result.submittedPrNumbers.length > 0) {

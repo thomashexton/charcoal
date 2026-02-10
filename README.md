@@ -98,11 +98,7 @@ The following Graphite features are intentionally not implemented:
 
 Charcoal has moved to a flattened command structure. Old nested commands like `gt branch create`, `gt stack submit`, etc. are no longer supported.
 
-Running a deprecated command will show a warning with the new command to use. To hide these warnings, set:
-
-```bash
-export GT_CLI_HIDE_DEPRECATION_WARNINGS=1
-```
+Running a deprecated command will print the new command to use and exit with an error.
 
 ## Contributing
 

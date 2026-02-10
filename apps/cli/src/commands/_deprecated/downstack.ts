@@ -1,9 +1,11 @@
 import { Argv } from 'yargs';
-import { handleDeprecatedCommand } from '../../lib/backwards_compat';
+import {
+  handleDeprecatedCommand,
+  handleDeprecatedCommandGroup,
+} from '../../lib/backwards_compat';
 
-export const command = 'downstack <command>';
-export const desc =
-  '[DEPRECATED] Use `gt <command> --downstack` instead. Run `gt downstack --help` to see available commands.';
+export const command = 'downstack [command..]';
+export const desc = false as const;
 export const aliases = ['ds'];
 export const deprecated = true;
 
@@ -12,18 +14,19 @@ const COMMAND_RENAMES: Record<string, string> = {
 };
 
 export const builder = function (yargs: Argv): Argv {
-  return yargs
-    .commandDir('../downstack-commands', {
-      extensions: ['js'],
-    })
-    .middleware((argv) => {
-      const subcommand = argv._[1] as string | undefined;
-      if (subcommand) {
-        const newCmd =
-          COMMAND_RENAMES[subcommand] ?? `${subcommand} --downstack`;
-        handleDeprecatedCommand(`downstack ${subcommand}`, newCmd);
-      }
-    })
-    .strict()
-    .demandCommand();
+  return yargs.strict(false);
+};
+
+export const handler = function (argv: {
+  command?: string[];
+}): void {
+  const subcommand = argv.command?.[0];
+  if (subcommand) {
+    const newCmd = COMMAND_RENAMES[subcommand] ?? `${subcommand} --downstack`;
+    handleDeprecatedCommand(`downstack ${subcommand}`, newCmd);
+  } else {
+    handleDeprecatedCommandGroup(
+      '`gt downstack` has been removed. Use `gt submit --downstack`, `gt restack --downstack`, etc. instead.'
+    );
+  }
 };

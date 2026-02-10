@@ -1,9 +1,11 @@
 import { Argv } from 'yargs';
-import { handleDeprecatedCommand } from '../../lib/backwards_compat';
+import {
+  handleDeprecatedCommand,
+  handleDeprecatedCommandGroup,
+} from '../../lib/backwards_compat';
 
-export const command = 'user <command>';
-export const desc =
-  '[DEPRECATED] Use `gt config` instead. Run `gt config --help` to see available settings.';
+export const command = 'user [command..]';
+export const desc = false as const;
 export const deprecated = true;
 
 const COMMAND_RENAMES: Record<string, string> = {
@@ -18,17 +20,19 @@ const COMMAND_RENAMES: Record<string, string> = {
 };
 
 export const builder = function (yargs: Argv): Argv {
-  return yargs
-    .commandDir('../user-commands', {
-      extensions: ['js'],
-    })
-    .middleware((argv) => {
-      const subcommand = argv._[1] as string | undefined;
-      if (subcommand) {
-        const newCmd = COMMAND_RENAMES[subcommand] ?? `config ${subcommand}`;
-        handleDeprecatedCommand(`user ${subcommand}`, newCmd);
-      }
-    })
-    .strict()
-    .demandCommand();
+  return yargs.strict(false);
+};
+
+export const handler = function (argv: {
+  command?: string[];
+}): void {
+  const subcommand = argv.command?.[0];
+  if (subcommand) {
+    const newCmd = COMMAND_RENAMES[subcommand] ?? `config ${subcommand}`;
+    handleDeprecatedCommand(`user ${subcommand}`, newCmd);
+  } else {
+    handleDeprecatedCommandGroup(
+      '`gt user` has been removed. Use `gt config` instead.'
+    );
+  }
 };

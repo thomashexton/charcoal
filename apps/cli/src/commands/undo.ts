@@ -68,18 +68,17 @@ function shortSha(sha: string | undefined): string {
 
 function formatOp(op: Operation): string {
   const date = new Date(op.timestamp).toLocaleString();
-  const dataEntries = Object.entries(op.data).filter(
-    ([k]) => k !== 'action'
-  );
+  const dataEntries = Object.entries(op.data).filter(([k]) => k !== 'action');
   const extras: string[] = [];
   if (op.data.action) extras.push(String(op.data.action));
   if (dataEntries.length > 0) {
-    extras.push(
-      dataEntries.map(([k, v]) => `${k}=${v}`).join(', ')
-    );
+    extras.push(dataEntries.map(([k, v]) => `${k}=${v}`).join(', '));
   }
-  const extraStr = extras.length > 0 ? chalk.gray(` (${extras.join(', ')})`) : '';
-  return `[${chalk.cyan(op.type)}] ${chalk.bold(op.branchName)}${extraStr} ${chalk.dim(date)}`;
+  const extraStr =
+    extras.length > 0 ? chalk.gray(` (${extras.join(', ')})`) : '';
+  return `[${chalk.cyan(op.type)}] ${chalk.bold(
+    op.branchName
+  )}${extraStr} ${chalk.dim(date)}`;
 }
 
 function fetchReflogUntilCovered(
@@ -90,9 +89,13 @@ function fetchReflogUntilCovered(
   const batchSize = Math.max(minEntries * 10, 50);
   const limit = Math.min(batchSize, maxEntries);
 
-  const result = spawnSync('git', ['reflog', '--oneline', '-n', String(limit)], {
-    encoding: 'utf-8',
-  });
+  const result = spawnSync(
+    'git',
+    ['reflog', '--oneline', '-n', String(limit)],
+    {
+      encoding: 'utf-8',
+    }
+  );
   if (result.status !== 0) return [];
 
   const entries = parseReflog(result.stdout);
@@ -136,7 +139,9 @@ export const handler = async (argv: argsT): Promise<void> =>
       context.splog.info(chalk.bold('Recent Charcoal operations:'));
       recentOps.forEach((op, i) => {
         const shaInfo = op.headBefore
-          ? chalk.gray(` ${shortSha(op.headBefore)} → ${shortSha(op.headAfter)}`)
+          ? chalk.gray(
+              ` ${shortSha(op.headBefore)} → ${shortSha(op.headAfter)}`
+            )
           : '';
         const branchInfo = op.branchBefore
           ? chalk.gray(` on ${op.branchBefore}`)
@@ -167,53 +172,12 @@ export const handler = async (argv: argsT): Promise<void> =>
       if (op.headAfter) opsBySha.set(op.headAfter.substring(0, 7), op);
     }
 
-    context.splog.info(chalk.bold('Recent history:'));
-    context.splog.info('');
-
-    for (const entry of reflogEntries) {
-      const matchedOp = opsBySha.get(entry.sha);
-      const marker = matchedOp
-        ? chalk.yellow(' ◀ ') + chalk.yellow(`gt ${matchedOp.type}`) + chalk.gray(` ${matchedOp.branchName}`)
-        : '';
-
-      context.splog.info(
-        `  ${chalk.dim(`HEAD@{${entry.index}}`)} ${chalk.cyan(entry.sha)} ${entry.description}${marker}`
-      );
-    }
-
-    context.splog.info('');
-
-    if (recentOps.length > 0) {
-      context.splog.info(chalk.bold('Undo suggestions:'));
-      context.splog.info('');
-      const seen = new Set<string>();
-      for (const op of recentOps) {
-        const date = new Date(op.timestamp).toLocaleString();
-        if (op.headBefore && !seen.has(op.headBefore)) {
-          seen.add(op.headBefore);
-          const refIdx = findReflogIndexForSha(reflogEntries, op.headBefore);
-          const refHint = refIdx !== undefined ? `HEAD@{${refIdx}}` : shortSha(op.headBefore);
-          context.splog.info(
-            `  To undo ${chalk.cyan(op.type)} ${chalk.bold(op.branchName)} ${chalk.dim(`(${date})`)}:`
-          );
-          context.splog.info(
-            `    ${chalk.green(`git reset --hard ${refHint}`)}`
-          );
-        } else if (!op.headBefore) {
-          context.splog.info(
-            `  ${chalk.cyan(op.type)} ${chalk.bold(op.branchName)} ${chalk.dim(`(${date})`)}`
-          );
-          context.splog.info(
-            `    ${chalk.dim('no SHA recorded — logged before undo tracking was added')}`
-          );
-        }
-        context.splog.info('');
-      }
-    } else {
-      context.splog.info(chalk.gray('To undo to a specific state, run:'));
-      context.splog.info(chalk.cyan('  git reset --hard HEAD@{N}'));
-      context.splog.info('');
-    }
+    printHistory({
+      reflogEntries,
+      opsBySha,
+      recentOps,
+      splog: context.splog,
+    });
 
     if (argv.force) {
       performUndo('HEAD@{1}', context);
@@ -234,9 +198,76 @@ export const handler = async (argv: argsT): Promise<void> =>
     }
   });
 
+function printHistory(opts: {
+  reflogEntries: ReflogEntry[];
+  opsBySha: Map<string, Operation>;
+  recentOps: Operation[];
+  splog: { info: (msg: string) => void };
+}): void {
+  const { reflogEntries, opsBySha, recentOps, splog } = opts;
+  splog.info(chalk.bold('Recent history:'));
+  splog.info('');
+
+  for (const entry of reflogEntries) {
+    const matchedOp = opsBySha.get(entry.sha);
+    const marker = matchedOp
+      ? chalk.yellow(' ◀ ') +
+        chalk.yellow(`gt ${matchedOp.type}`) +
+        chalk.gray(` ${matchedOp.branchName}`)
+      : '';
+
+    splog.info(
+      `  ${chalk.dim(`HEAD@{${entry.index}}`)} ${chalk.cyan(entry.sha)} ${
+        entry.description
+      }${marker}`
+    );
+  }
+
+  splog.info('');
+
+  if (recentOps.length > 0) {
+    splog.info(chalk.bold('Undo suggestions:'));
+    splog.info('');
+    const seen = new Set<string>();
+    for (const op of recentOps) {
+      const date = new Date(op.timestamp).toLocaleString();
+      if (op.headBefore && !seen.has(op.headBefore)) {
+        seen.add(op.headBefore);
+        const refIdx = findReflogIndexForSha(reflogEntries, op.headBefore);
+        const refHint =
+          refIdx !== undefined ? `HEAD@{${refIdx}}` : shortSha(op.headBefore);
+        splog.info(
+          `  To undo ${chalk.cyan(op.type)} ${chalk.bold(
+            op.branchName
+          )} ${chalk.dim(`(${date})`)}:`
+        );
+        splog.info(`    ${chalk.green(`git reset --hard ${refHint}`)}`);
+      } else if (!op.headBefore) {
+        splog.info(
+          `  ${chalk.cyan(op.type)} ${chalk.bold(op.branchName)} ${chalk.dim(
+            `(${date})`
+          )}`
+        );
+        splog.info(
+          `    ${chalk.dim(
+            'no SHA recorded — logged before undo tracking was added'
+          )}`
+        );
+      }
+      splog.info('');
+    }
+  } else {
+    splog.info(chalk.gray('To undo to a specific state, run:'));
+    splog.info(chalk.cyan('  git reset --hard HEAD@{N}'));
+    splog.info('');
+  }
+}
+
 function performUndo(
   target: string,
-  context: { splog: { info: (msg: string) => void; error: (msg: string) => void } }
+  context: {
+    splog: { info: (msg: string) => void; error: (msg: string) => void };
+  }
 ): void {
   const headBefore = captureHeadSha();
   const branchBefore = getCurrentBranchName();

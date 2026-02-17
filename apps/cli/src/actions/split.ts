@@ -7,7 +7,11 @@ import { KilledError, PreconditionsFailedError } from '../lib/errors';
 import { uncommittedTrackedChangesPrecondition } from '../lib/preconditions';
 import { replaceUnsupportedCharacters } from '../lib/utils/branch_name';
 import { clearPromptResultLine } from '../lib/utils/prompts_helpers';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { restackBranches } from './restack';
 import { trackBranch } from './track_branch';
 

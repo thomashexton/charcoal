@@ -1,15 +1,12 @@
-/* eslint-disable no-console */
-import chalk from 'chalk';
+import { ExitFailedError } from './errors';
 
 export function handleDeprecatedCommand(
   _oldCommand: string,
   newCommand: string
 ): void {
-  console.error(chalk.yellow(`Run \`gt ${newCommand}\` instead.`));
-  process.exit(1);
+  throw new ExitFailedError(`Run \`gt ${newCommand}\` instead.`);
 }
 
 export function handleDeprecatedCommandGroup(message: string): void {
-  console.error(chalk.yellow(message));
-  process.exit(1);
+  throw new ExitFailedError(message);
 }

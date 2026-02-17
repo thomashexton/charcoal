@@ -1,6 +1,10 @@
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { newBranchName } from '../lib/utils/branch_name';
 import { restackBranches } from './restack';

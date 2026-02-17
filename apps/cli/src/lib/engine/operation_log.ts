@@ -96,11 +96,13 @@ export function clearOperations(): void {
 
 export function captureHeadSha(): string | undefined {
   try {
-    return runGitCommand({
-      args: ['rev-parse', 'HEAD'],
-      onError: 'throw',
-      resource: 'captureHeadSha',
-    }).trim() || undefined;
+    return (
+      runGitCommand({
+        args: ['rev-parse', 'HEAD'],
+        onError: 'throw',
+        resource: 'captureHeadSha',
+      }).trim() || undefined
+    );
   } catch {
     return undefined;
   }

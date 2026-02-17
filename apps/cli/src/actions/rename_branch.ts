@@ -1,6 +1,10 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { replaceUnsupportedCharacters } from '../lib/utils/branch_name';
 

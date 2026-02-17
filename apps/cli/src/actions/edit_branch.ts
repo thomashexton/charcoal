@@ -1,7 +1,11 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { RebaseConflictError } from '../lib/errors';
 import { persistContinuation } from './persist_continuation';
 import { printConflictStatus } from './print_conflict_status';

@@ -1,6 +1,10 @@
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { SCOPE } from '../lib/engine/scope_spec';
 import { restackBranches } from './restack';
 

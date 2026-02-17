@@ -1,6 +1,10 @@
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { ensureSomeStagedChangesPrecondition } from '../lib/preconditions';
 import { BlockedDuringRebaseError } from '../lib/errors';
 import { restackBranches } from './restack';

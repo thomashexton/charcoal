@@ -2,7 +2,11 @@ import chalk from 'chalk';
 import { spawnSync } from 'child_process';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { logOperation, captureHeadSha, getCurrentBranchName } from '../lib/engine/operation_log';
+import {
+  logOperation,
+  captureHeadSha,
+  getCurrentBranchName,
+} from '../lib/engine/operation_log';
 import { ExitFailedError } from '../lib/errors';
 import { restackBranches } from './restack';
 

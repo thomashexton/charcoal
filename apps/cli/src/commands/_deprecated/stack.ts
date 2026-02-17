@@ -13,9 +13,7 @@ export const builder = function (yargs: Argv): Argv {
   return yargs.strict(false);
 };
 
-export const handler = function (argv: {
-  command?: string[];
-}): void {
+export const handler = function (argv: { command?: string[] }): void {
   const subcommand = argv.command?.[0];
   if (subcommand) {
     handleDeprecatedCommand(`stack ${subcommand}`, `${subcommand} --stack`);

@@ -47,7 +47,7 @@ describe(`backwards compatibility`, function () {
       'test',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt create` instead');
+    expect(result.stdout).to.include('Run `gt create` instead');
   });
 
   it('deprecated stack commands show suggestion and exit with error', () => {
@@ -56,7 +56,7 @@ describe(`backwards compatibility`, function () {
       'restack',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt restack --stack` instead');
+    expect(result.stdout).to.include('Run `gt restack --stack` instead');
   });
 
   it('deprecated upstack commands show suggestion and exit with error', () => {
@@ -65,7 +65,7 @@ describe(`backwards compatibility`, function () {
       'restack',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt restack --upstack` instead');
+    expect(result.stdout).to.include('Run `gt restack --upstack` instead');
   });
 
   it('deprecated downstack commands show suggestion and exit with error', () => {
@@ -74,7 +74,7 @@ describe(`backwards compatibility`, function () {
       'restack',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt');
+    expect(result.stdout).to.include('Run `gt');
   });
 
   it('deprecated repo commands show suggestion and exit with error', () => {
@@ -86,7 +86,7 @@ describe(`backwards compatibility`, function () {
       '--no-interactive',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt init` instead');
+    expect(result.stdout).to.include('Run `gt init` instead');
   });
 
   it('deprecated repo config commands show suggestion and exit with error', () => {
@@ -95,6 +95,6 @@ describe(`backwards compatibility`, function () {
       'owner',
     ]);
     expect(result.status).to.equal(1);
-    expect(result.stderr).to.include('Run `gt config repo-owner` instead');
+    expect(result.stdout).to.include('Run `gt config repo-owner` instead');
   });
 });

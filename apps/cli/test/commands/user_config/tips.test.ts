@@ -8,20 +8,20 @@ for (const scene of [new BasicScene()]) {
 
     it('Sanity check - can enable tips', () => {
       expect(() =>
-        scene.repo.runCliCommand([`user`, `tips`, `--enable`])
+        scene.repo.runCliCommand([`config`, `tips`, `--enable`])
       ).to.not.throw(Error);
-      expect(scene.repo.runCliCommandAndGetOutput([`user`, `tips`])).to.equal(
-        'tips enabled'
-      );
+      expect(
+        scene.repo.runCliCommandAndGetOutput([`config`, `tips`])
+      ).to.equal('tips enabled');
     });
 
     it('Sanity check - can disable tips', () => {
       expect(() =>
-        scene.repo.runCliCommand([`user`, `tips`, `--disable`])
+        scene.repo.runCliCommand([`config`, `tips`, `--disable`])
       ).to.not.throw(Error);
-      expect(scene.repo.runCliCommandAndGetOutput([`user`, `tips`])).to.equal(
-        'tips disabled'
-      );
+      expect(
+        scene.repo.runCliCommandAndGetOutput([`config`, `tips`])
+      ).to.equal('tips disabled');
     });
   });
 }

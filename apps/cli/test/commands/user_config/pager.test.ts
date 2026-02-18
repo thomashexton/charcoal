@@ -7,7 +7,7 @@ for (const scene of [new BasicScene()]) {
     configureTest(this, scene);
 
     it('Sanity check - can check pager', () => {
-      expect(() => scene.repo.runCliCommand([`user`, `pager`])).to.not.throw(
+      expect(() => scene.repo.runCliCommand([`config`, `pager`])).to.not.throw(
         Error
       );
     });
@@ -15,30 +15,30 @@ for (const scene of [new BasicScene()]) {
     it('Sanity check - can set pager', () => {
       expect(
         scene.repo.runCliCommandAndGetOutput([
-          `user`,
+          `config`,
           `pager`,
           `--set`,
           `less -FRX`,
         ])
       ).to.equal('Pager set to less -FRX');
-      expect(scene.repo.runCliCommandAndGetOutput([`user`, `pager`])).to.equal(
-        'less -FRX'
-      );
+      expect(
+        scene.repo.runCliCommandAndGetOutput([`config`, `pager`])
+      ).to.equal('less -FRX');
     });
 
     it('Sanity check - can disable pager', () => {
       expect(
-        scene.repo.runCliCommandAndGetOutput([`user`, `pager`, `--disable`])
+        scene.repo.runCliCommandAndGetOutput([`config`, `pager`, `--disable`])
       ).to.equal('Pager disabled');
-      expect(scene.repo.runCliCommandAndGetOutput([`user`, `pager`])).to.equal(
-        'Pager is disabled'
-      );
+      expect(
+        scene.repo.runCliCommandAndGetOutput([`config`, `pager`])
+      ).to.equal('Pager is disabled');
     });
 
     it('Sanity check - can unset pager', () => {
       process.env.TEST_GT_PAGER = 'less';
       expect(
-        scene.repo.runCliCommandAndGetOutput([`user`, `pager`, `--unset`])
+        scene.repo.runCliCommandAndGetOutput([`config`, `pager`, `--unset`])
       ).to.equal(
         'Pager preference erased. Defaulting to your git pager (currently less)'
       );

@@ -7,24 +7,29 @@ for (const scene of [new BasicScene()]) {
     configureTest(this, scene);
 
     it('Sanity check - can check editor', () => {
-      expect(() => scene.repo.runCliCommand([`user`, `editor`])).to.not.throw(
+      expect(() => scene.repo.runCliCommand([`config`, `editor`])).to.not.throw(
         Error
       );
     });
 
     it('Sanity check - can set editor', () => {
       expect(
-        scene.repo.runCliCommandAndGetOutput([`user`, `editor`, `--set`, `vim`])
+        scene.repo.runCliCommandAndGetOutput([
+          `config`,
+          `editor`,
+          `--set`,
+          `vim`,
+        ])
       ).to.equal('Editor set to vim');
-      expect(scene.repo.runCliCommandAndGetOutput([`user`, `editor`])).to.equal(
-        'vim'
-      );
+      expect(
+        scene.repo.runCliCommandAndGetOutput([`config`, `editor`])
+      ).to.equal('vim');
     });
 
     it('Sanity check - can unset editor', () => {
       process.env.TEST_GIT_EDITOR = 'vi';
       const output = scene.repo.runCliCommandAndGetOutput([
-        `user`,
+        `config`,
         `editor`,
         `--unset`,
       ]);

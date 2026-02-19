@@ -14,6 +14,51 @@ import {
 import { execFileSync } from 'child_process';
 import { restackBranches } from '../restack';
 
+/**
+ * Determine the effective out-of-sync trunk behavior based on precedence:
+ * 1. CLI flag (--ignore-out-of-sync-trunk)
+ * 2. Environment variable (GT_IGNORE_OUT_OF_SYNC_TRUNK)
+ * 3. User config (ignoreOutOfSyncTrunk)
+ * 4. Default ('prompt')
+ */
+function determineOutOfSyncBehavior(
+  cliFlag: boolean | undefined,
+  context: TContext
+): 'prompt' | 'ignore' | 'warn' {
+  // CLI flag takes highest priority
+  if (cliFlag === true) {
+    return 'ignore';
+  }
+
+  // Check environment variable
+  const envVar = process.env.GT_IGNORE_OUT_OF_SYNC_TRUNK;
+  if (envVar) {
+    const normalized = envVar.toLowerCase();
+    if (
+      normalized === 'ignore' ||
+      normalized === 'warn' ||
+      normalized === 'prompt'
+    ) {
+      return normalized as 'prompt' | 'ignore' | 'warn';
+    }
+    context.splog.warn(
+      chalk.yellow(
+        `Invalid GT_IGNORE_OUT_OF_SYNC_TRUNK value: "${envVar}". ` +
+          `Expected 'prompt', 'ignore', or 'warn'. Using default.`
+      )
+    );
+  }
+
+  // Check user config
+  const userConfigValue = context.userConfig.data.ignoreOutOfSyncTrunk;
+  if (userConfigValue) {
+    return userConfigValue;
+  }
+
+  // Default behavior
+  return 'prompt';
+}
+
 export type SubmitResult = {
   submittedPrUrls: string[];
   submittedPrNumbers: number[];
@@ -68,34 +113,64 @@ export async function submitAction(
   const trunkOutOfSync = !context.engine.branchMatchesRemote(
     context.engine.trunk
   );
-  if (trunkOutOfSync && !args.ignoreOutOfSyncTrunk) {
-    context.splog.warn(
-      chalk.yellow(
-        `Your local trunk (${context.engine.trunk}) is out of sync with remote.`
-      )
+
+  if (trunkOutOfSync) {
+    const behavior = determineOutOfSyncBehavior(
+      args.ignoreOutOfSyncTrunk,
+      context
     );
-    if (context.interactive) {
-      const proceed = (
-        await context.prompts({
-          type: 'confirm',
-          name: 'value',
-          message:
-            'Do you want to continue anyway? (Use --ignore-out-of-sync-trunk to skip this warning)',
-          initial: false,
-        })
-      ).value;
-      if (!proceed) {
-        context.splog.info(
-          chalk.blueBright(
-            'Run `gt sync` to update your trunk before submitting.'
+
+    switch (behavior) {
+      case 'ignore':
+        // Skip check entirely (no warning, no prompt)
+        break;
+
+      case 'warn':
+        // Show warning but proceed
+        context.splog.warn(
+          chalk.yellow(
+            `Your local trunk (${context.engine.trunk}) is out of sync with remote.`
           )
         );
-        throw new KilledError();
-      }
-    } else {
-      throw new ExitFailedError(
-        `Trunk is out of sync with remote. Run \`gt sync\` or use --ignore-out-of-sync-trunk to proceed anyway.`
-      );
+        context.splog.info(
+          chalk.blueBright(
+            'Consider running `gt sync` to update your trunk. ' +
+              '(Use --ignore-out-of-sync-trunk or set `gt config ignore-out-of-sync-trunk --set ignore` to skip this warning)'
+          )
+        );
+        break;
+
+      case 'prompt':
+        // Current behavior - prompt in interactive, error in non-interactive
+        context.splog.warn(
+          chalk.yellow(
+            `Your local trunk (${context.engine.trunk}) is out of sync with remote.`
+          )
+        );
+        if (context.interactive) {
+          const proceed = (
+            await context.prompts({
+              type: 'confirm',
+              name: 'value',
+              message:
+                'Do you want to continue anyway? (Use --ignore-out-of-sync-trunk to skip this warning)',
+              initial: false,
+            })
+          ).value;
+          if (!proceed) {
+            context.splog.info(
+              chalk.blueBright(
+                'Run `gt sync` to update your trunk before submitting.'
+              )
+            );
+            throw new KilledError();
+          }
+        } else {
+          throw new ExitFailedError(
+            `Trunk is out of sync with remote. Run \`gt sync\` or use --ignore-out-of-sync-trunk to proceed anyway.`
+          );
+        }
+        break;
     }
   }
   if (args.dryRun) {

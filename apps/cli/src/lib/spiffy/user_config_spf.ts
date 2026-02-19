@@ -18,6 +18,9 @@ const schema = t.shape({
   pager: t.optional(t.string),
   restackCommitterDateIsAuthorDate: t.optional(t.boolean),
   submitIncludeCommitMessages: t.optional(t.boolean),
+  ignoreOutOfSyncTrunk: t.optional(
+    t.unionMany([t.literal('prompt'), t.literal('ignore'), t.literal('warn')])
+  ),
   dashUrl: t.optional(t.string),
   connectCliToLocalServer: t.optional(t.boolean),
   gtiConfigs: t.optional(

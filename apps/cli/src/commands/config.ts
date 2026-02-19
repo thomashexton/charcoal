@@ -14,6 +14,7 @@ const USER_CONFIG_MAP: Record<string, string> = {
   pager: 'pager',
   restackCommitterDateIsAuthorDate: 'restack-date',
   submitIncludeCommitMessages: 'submit-body',
+  ignoreOutOfSyncTrunk: 'ignore-out-of-sync-trunk',
   dashUrl: 'dash-url',
 };
 

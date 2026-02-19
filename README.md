@@ -72,6 +72,50 @@ The following Graphite features are intentionally not implemented:
 | `gt undo --list` | View operation history without undoing |
 | `gt undo` | Reflog-based undo with annotated operation history (**experimental**) |
 
+## Configuration
+
+Charcoal supports user-level configuration via `gt config` commands. Configuration is stored in `~/.graphite_user_config`.
+
+### Out-of-Sync Trunk Behavior
+
+Control what happens when your local trunk is out of sync with the remote during `gt submit`:
+
+```bash
+# Set default behavior
+gt config ignore-out-of-sync-trunk --set <prompt|ignore|warn>
+
+# View current setting
+gt config ignore-out-of-sync-trunk
+```
+
+**Behavior modes:**
+- `prompt` (default) - Ask for confirmation in interactive mode, error in non-interactive mode
+- `ignore` - Skip the out-of-sync check entirely (no warning, no prompt)
+- `warn` - Show warning but proceed anyway (non-blocking)
+
+**Precedence:** CLI flag > Environment variable > User config > Default
+
+```bash
+# One-time override via environment variable
+GT_IGNORE_OUT_OF_SYNC_TRUNK=ignore gt submit
+
+# One-time override via CLI flag
+gt submit --ignore-out-of-sync-trunk
+```
+
+**Examples:**
+
+```bash
+# Set default to skip the check
+gt config ignore-out-of-sync-trunk --set ignore
+
+# Set default to warn but proceed
+gt config ignore-out-of-sync-trunk --set warn
+
+# Reset to default (prompt)
+gt config ignore-out-of-sync-trunk --unset
+```
+
 ### Known Differences
 
 | Feature | Graphite | Charcoal |

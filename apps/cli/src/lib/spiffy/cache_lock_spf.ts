@@ -21,5 +21,5 @@ export const cacheLockConfigFactory = spiffy({
   helperFunctions: () => {
     return {};
   },
-  options: { removeIfEmpty: true },
+  options: { removeIfEmpty: true, removeIfInvalid: true },
 });

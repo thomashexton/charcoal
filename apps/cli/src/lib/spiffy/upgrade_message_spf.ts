@@ -26,7 +26,7 @@ export const messageConfigFactory = spiffy({
   helperFunctions: () => {
     return {};
   },
-  options: { removeIfEmpty: true },
+  options: { removeIfEmpty: true, removeIfInvalid: true },
 });
 
 export type TMessageConfig = ReturnType<typeof messageConfigFactory.load>;

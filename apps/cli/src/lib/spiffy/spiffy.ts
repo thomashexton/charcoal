@@ -26,7 +26,7 @@ export function spiffy<TSpfData, THelperFunctions>(
       filePath,
       schema: template.schema,
       initialize: template.initialize,
-      removeIfInvalid: template.options?.removeIfEmpty || false,
+      removeIfInvalid: template.options?.removeIfInvalid || false,
     }) as TSpfData;
     const update = (mutator: TSpfMutator<TSpfData>) => {
       mutator(_data);

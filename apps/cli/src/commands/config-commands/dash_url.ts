@@ -26,13 +26,13 @@ export const handler = async (argv: argsT): Promise<void> => {
   return graphiteWithoutRepo(argv, canonical, async (context) => {
     if (argv.set) {
       context.userConfig.update((data) => (data.dashUrl = argv.set));
-      context.splog.info(`Dashboard URL set to ${chalk.cyan(argv.set)}`);
+      context.splog.info(`Dashboard URL set to ${argv.set}`);
     } else if (argv.unset) {
       context.userConfig.update((data) => (data.dashUrl = undefined));
       context.splog.info('Dashboard URL unset.');
     } else {
       context.userConfig.data.dashUrl
-        ? context.splog.info(chalk.cyan(context.userConfig.data.dashUrl))
+        ? context.splog.info(context.userConfig.data.dashUrl)
         : context.splog.info(
             `Dashboard URL is not set. Use ${chalk.cyan(
               'gt config dash-url --set <url>'

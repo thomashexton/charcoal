@@ -1,4 +1,3 @@
-import chalk from 'chalk';
 import fs from 'fs-extra';
 import yargs from 'yargs';
 import { captureState, recreateState } from '../../lib/debug_context';
@@ -35,10 +34,10 @@ export const handler = async (argv: argsT): Promise<void> => {
         fs.readFileSync(argv['recreate-from-file']).toString(),
         context.splog
       );
-      context.splog.info(`${chalk.green(dir)}`);
+      context.splog.info(dir);
     } else if (argv.recreate) {
       const dir = recreateState(argv.recreate, context.splog);
-      context.splog.info(`${chalk.green(dir)}`);
+      context.splog.info(dir);
     } else {
       context.splog.info(captureState(context));
     }

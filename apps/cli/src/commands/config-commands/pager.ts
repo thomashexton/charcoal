@@ -34,13 +34,13 @@ export const handler = async (argv: argsT): Promise<void> => {
       context.splog.info(`Pager disabled`);
     } else if (argv.set) {
       context.userConfig.update((data) => (data.pager = argv.set));
-      context.splog.info(`Pager set to ${chalk.cyan(argv.set)}`);
+      context.splog.info(`Pager set to ${argv.set}`);
     } else if (argv.unset) {
       context.userConfig.update((data) => (data.pager = undefined));
       const currentPager = context.userConfig.getPager();
       context.splog.info(
         `Pager preference erased. Defaulting to your git pager (currently ${
-          currentPager ? chalk.cyan(currentPager) : 'disabled'
+          currentPager ? currentPager : 'disabled'
         })`
       );
     } else {
@@ -48,7 +48,7 @@ export const handler = async (argv: argsT): Promise<void> => {
       !currentPager
         ? context.splog.info(`Pager is disabled`)
         : context.userConfig.data.pager
-        ? context.splog.info(chalk.cyan(context.userConfig.data.pager))
+        ? context.splog.info(context.userConfig.data.pager)
         : context.splog.info(
             `Pager is not set. Charcoal will use your git pager (currently ${chalk.cyan(
               currentPager

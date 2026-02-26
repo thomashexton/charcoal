@@ -26,7 +26,7 @@ export const handler = async (argv: argsT): Promise<void> => {
   return graphiteWithoutRepo(argv, canonical, async (context) => {
     if (argv.set) {
       context.userConfig.update((data) => (data.editor = argv.set));
-      context.splog.info(`Editor set to ${chalk.cyan(argv.set)}`);
+      context.splog.info(`Editor set to ${argv.set}`);
     } else if (argv.unset) {
       context.userConfig.update((data) => (data.editor = undefined));
       context.splog.info(
@@ -36,7 +36,7 @@ export const handler = async (argv: argsT): Promise<void> => {
       );
     } else {
       context.userConfig.data.editor
-        ? context.splog.info(chalk.cyan(context.userConfig.data.editor))
+        ? context.splog.info(context.userConfig.data.editor)
         : context.splog.info(
             `Editor is not set. Charcoal will use your git editor (currently ${chalk.cyan(
               context.userConfig.getEditor()

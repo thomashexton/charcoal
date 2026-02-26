@@ -2,7 +2,11 @@ import { spawnSync } from 'child_process';
 import chalk from 'chalk';
 import { TContext } from '../lib/context';
 import { SCOPE } from '../lib/engine/scope_spec';
-import { ExitFailedError } from '../lib/errors';
+import { ExitFailedError, RebaseConflictError } from '../lib/errors';
+import { rebaseInProgress } from '../lib/git/rebase_in_progress';
+import { runGitCommand } from '../lib/git/runner';
+import { persistContinuation } from './persist_continuation';
+import { printConflictStatus } from './print_conflict_status';
 import { restackBranches } from './restack';
 
 function checkGitAbsorbInstalled(): void {
@@ -12,10 +16,8 @@ function checkGitAbsorbInstalled(): void {
   if (checkAbsorb.status !== 0) {
     throw new ExitFailedError(
       [
-        `${chalk.yellow('git-absorb')} is not installed.`,
-        `Please install it to use this command: ${chalk.cyan(
-          'https://github.com/tummychow/git-absorb#installation'
-        )}`,
+        `git-absorb is not installed.`,
+        `Please install it to use this command: https://github.com/tummychow/git-absorb#installation`,
       ].join('\n')
     );
   }
@@ -83,7 +85,9 @@ function displayAbsorbPlan(dryRun: DryRunResult, context: TContext): void {
   }
 }
 
-function executeAbsorb(base: string): void {
+type ExecuteAbsorbResult = 'DONE' | 'CONFLICT';
+
+function executeAbsorb(base: string): ExecuteAbsorbResult {
   // Run git absorb without --and-rebase so we can control the rebase ourselves
   const absorbResult = spawnSync('git', ['absorb', '--base', base], {
     stdio: 'inherit',
@@ -108,8 +112,13 @@ function executeAbsorb(base: string): void {
   );
 
   if (rebaseResult.status !== 0) {
+    if (rebaseInProgress()) {
+      return 'CONFLICT';
+    }
     throw new ExitFailedError('git rebase failed');
   }
+
+  return 'DONE';
 }
 
 export async function absorbAction(
@@ -167,7 +176,28 @@ export async function absorbAction(
   const currentBranch = context.engine.currentBranchPrecondition;
   const fullStack = context.engine.getRelativeStack(currentBranch, SCOPE.STACK);
 
-  executeAbsorb(trunk);
+  const absorbResult = executeAbsorb(trunk);
+
+  if (absorbResult === 'CONFLICT') {
+    const trunkSha = runGitCommand({
+      args: ['rev-parse', trunk],
+      onError: 'throw',
+      resource: null,
+    });
+    persistContinuation(
+      {
+        branchesToRestack: fullStack,
+        rebasedBranchBase: trunkSha,
+        rebuildAfterContinue: true,
+      },
+      context
+    );
+    printConflictStatus(
+      `Hit conflict during absorb rebase.`,
+      context
+    );
+    throw new RebaseConflictError();
+  }
 
   context.engine.rebuild();
 

@@ -5,6 +5,7 @@ export function persistContinuation(
     branchesToRestack?: string[];
     branchesToSync?: string[];
     rebasedBranchBase: string;
+    rebuildAfterContinue?: boolean;
   },
   context: TContext
 ): void {
@@ -29,6 +30,7 @@ export function persistContinuation(
     data.branchesToRestack = branchesToRestack;
     data.currentBranchOverride = context.engine.currentBranch;
     data.rebasedBranchBase = args.rebasedBranchBase;
+    data.rebuildAfterContinue = args.rebuildAfterContinue;
   });
 }
 
@@ -38,5 +40,6 @@ export function clearContinuation(context: TContext): void {
     data.branchesToRestack = [];
     data.currentBranchOverride = undefined;
     data.rebasedBranchBase = undefined;
+    data.rebuildAfterContinue = undefined;
   });
 }

@@ -21,6 +21,8 @@ export async function continueAction(
   const rebasedBranchBase = context.continueConfig.data.rebasedBranchBase;
   const branchesToSync = context.continueConfig.data?.branchesToSync;
   const branchesToRestack = context.continueConfig.data?.branchesToRestack;
+  const rebuildAfterContinue =
+    context.continueConfig.data?.rebuildAfterContinue;
 
   if (!rebasedBranchBase) {
     clearContinuation(context);
@@ -30,7 +32,11 @@ export async function continueAction(
   const cont = context.engine.continueRebase(rebasedBranchBase);
   if (cont.result === 'REBASE_CONFLICT') {
     persistContinuation(
-      { branchesToRestack: branchesToRestack, rebasedBranchBase },
+      {
+        branchesToRestack: branchesToRestack,
+        rebasedBranchBase,
+        rebuildAfterContinue,
+      },
       context
     );
     printConflictStatus(`Rebase conflict is not yet resolved.`, context);
@@ -40,6 +46,10 @@ export async function continueAction(
   context.splog.info(
     `Resolved rebase conflict for ${chalk.green(cont.branchName)}.`
   );
+
+  if (rebuildAfterContinue) {
+    context.engine.rebuild();
+  }
 
   if (branchesToSync) {
     await getBranchesFromRemote(

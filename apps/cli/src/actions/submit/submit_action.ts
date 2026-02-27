@@ -7,6 +7,7 @@ import { getPRInfoForBranches } from './prepare_branches';
 import { validateBranchesToSubmit } from './validate_branches';
 import { submitPullRequest } from './submit_prs';
 import {
+  countPrsInStack,
   createPrBodyFooter,
   footerFooter,
   footerTitle,
@@ -264,8 +265,7 @@ export async function submitAction(
       if (!prInfo?.number) {
         continue;
       }
-      const footer = createPrBodyFooter(context, branch);
-      const updatedBody = updatePrBodyFooter(prInfo.body, footer);
+      const updatedBody = resolveUpdatedPrBody(context, branch, prInfo.body);
       const prFooterChanged = updatedBody !== prInfo.body;
       if (prFooterChanged && !args.dryRun) {
         execFileSync('gh', [
@@ -327,8 +327,7 @@ export async function submitAction(
     if (!prInfo?.number) {
       continue;
     }
-    const footer = createPrBodyFooter(context, branch);
-    const updatedBody = updatePrBodyFooter(prInfo.body, footer);
+    const updatedBody = resolveUpdatedPrBody(context, branch, prInfo.body);
     const prFooterChanged = updatedBody !== prInfo.body;
     if (prFooterChanged && !args.dryRun) {
       execFileSync('gh', [
@@ -416,12 +415,9 @@ export async function submitAction(
   return result;
 }
 
-export function updatePrBodyFooter(
-  body: string | undefined,
-  footer: string
-): string {
+export function stripPrBodyFooter(body: string | undefined): string {
   if (!body) {
-    return footer;
+    return '';
   }
 
   // Get the core title and footer text without extra whitespace
@@ -440,9 +436,32 @@ export function updatePrBodyFooter(
     'g'
   );
 
-  const bodyWithoutFooters = body.replace(footerPattern, '');
+  return body.replace(footerPattern, '');
+}
 
-  return bodyWithoutFooters + footer;
+export function updatePrBodyFooter(
+  body: string | undefined,
+  footer: string
+): string {
+  if (!body) {
+    return footer;
+  }
+  return stripPrBodyFooter(body) + footer;
+}
+
+function resolveUpdatedPrBody(
+  context: TContext,
+  branch: string,
+  currentBody: string | undefined
+): string {
+  const showFooter =
+    countPrsInStack(context, branch) > 1 ||
+    context.userConfig.data.submitFooterOnSinglePr === true;
+
+  if (showFooter) {
+    return updatePrBodyFooter(currentBody, createPrBodyFooter(context, branch));
+  }
+  return stripPrBodyFooter(currentBody);
 }
 
 async function selectBranches(

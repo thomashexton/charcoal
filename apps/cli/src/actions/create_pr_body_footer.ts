@@ -17,6 +17,35 @@ export function createPrBodyFooter(context: TContext, branch: string): string {
   return `${footerTitle}${tree}${footerFooter}`;
 }
 
+export function countPrsInStack(context: TContext, branch: string): number {
+  const terminalParent = findTerminalParent(context, branch);
+  return countPrsFromNode(context, [terminalParent], branch);
+}
+
+function countPrsFromNode(
+  context: TContext,
+  branches: string[],
+  prBranch: string
+): number {
+  let count = 0;
+  for (const b of branches) {
+    if (
+      b !== prBranch &&
+      !(
+        isParentOfBranch(context, b, prBranch) ||
+        isParentOfBranch(context, prBranch, b)
+      )
+    ) {
+      continue;
+    }
+    if (context.engine.getPrInfo(b)?.number) {
+      count++;
+    }
+    count += countPrsFromNode(context, context.engine.getChildren(b), prBranch);
+  }
+  return count;
+}
+
 function buildBranchTree({
   context,
   currentBranches,

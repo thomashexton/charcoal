@@ -18,6 +18,7 @@ const schema = t.shape({
   pager: t.optional(t.string),
   restackCommitterDateIsAuthorDate: t.optional(t.boolean),
   submitIncludeCommitMessages: t.optional(t.boolean),
+  submitFooterOnSinglePr: t.optional(t.boolean),
   ignoreOutOfSyncTrunk: t.optional(
     t.unionMany([t.literal('prompt'), t.literal('ignore'), t.literal('warn')])
   ),

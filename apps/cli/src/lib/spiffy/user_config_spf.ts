@@ -19,6 +19,7 @@ const schema = t.shape({
   restackCommitterDateIsAuthorDate: t.optional(t.boolean),
   submitIncludeCommitMessages: t.optional(t.boolean),
   submitFooterOnSinglePr: t.optional(t.boolean),
+  submitFooterTitle: t.optional(t.string),
   ignoreOutOfSyncTrunk: t.optional(
     t.unionMany([t.literal('prompt'), t.literal('ignore'), t.literal('warn')])
   ),

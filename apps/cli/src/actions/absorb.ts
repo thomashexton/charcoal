@@ -192,10 +192,7 @@ export async function absorbAction(
       },
       context
     );
-    printConflictStatus(
-      `Hit conflict during absorb rebase.`,
-      context
-    );
+    printConflictStatus(`Hit conflict during absorb rebase.`, context);
     throw new RebaseConflictError();
   }
 

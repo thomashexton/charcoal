@@ -15,6 +15,7 @@ const USER_CONFIG_MAP: Record<string, string> = {
   restackCommitterDateIsAuthorDate: 'restack-date',
   submitIncludeCommitMessages: 'submit-body',
   submitFooterOnSinglePr: 'submit-footer-single-pr',
+  submitFooterTitle: 'submit-footer-title',
   ignoreOutOfSyncTrunk: 'ignore-out-of-sync-trunk',
   dashUrl: 'dash-url',
 };

@@ -23,6 +23,7 @@ export async function syncAction(
 
   if (opts.pull) {
     await pullTrunk(opts.force, context);
+    context.engine.revalidateBranches();
   }
 
   const branchesToRestack: string[] = [];

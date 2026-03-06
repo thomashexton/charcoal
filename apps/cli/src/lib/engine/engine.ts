@@ -79,6 +79,7 @@ export type TEngine = {
   getChildren: (branchName: string) => string[];
 
   setParent: (branchName: string, parentBranchName: string) => void;
+  reparentBranch: (branchName: string, parentBranchName: string) => void;
   getParent: (branchName: string) => string | undefined;
   getParentPrecondition: (branchName: string) => string;
 
@@ -134,6 +135,7 @@ export type TEngine = {
   branchMatchesRemote: (branchName: string) => boolean;
 
   pushBranch: (branchName: string, forcePush: boolean) => void;
+  revalidateBranches: () => void;
   pullTrunk: () => 'PULL_DONE' | 'PULL_UNNEEDED' | 'PULL_CONFLICT';
   hardReset: (sha?: string) => void;
   resetTrunkToRemote: () => void;
@@ -621,6 +623,25 @@ export function composeEngine({
     },
     getChildren,
     setParent,
+    reparentBranch: (branchName: string, parentBranchName: string) => {
+      validateNewParent(branchName, parentBranchName);
+      const cachedMeta = assertBranchIsValidAndNotTrunkAndGetMeta(branchName);
+
+      const oldParentBranchName = cachedMeta.parentBranchName;
+      if (oldParentBranchName === parentBranchName) {
+        return;
+      }
+
+      assertBranchIsValidOrTrunkAndGetMeta(parentBranchName);
+      updateMeta(branchName, {
+        ...cachedMeta,
+        parentBranchName,
+        // Reset PBR to the merge-base with the new parent so that
+        // isBranchFixed() returns false and a subsequent restack will
+        // actually rebase this branch onto its new parent.
+        parentBranchRevision: git.getMergeBase(branchName, parentBranchName),
+      });
+    },
     getParent,
     getParentPrecondition: (branchName: string) =>
       assertBranchIsValidAndNotTrunkAndGetMeta(branchName).parentBranchName,
@@ -936,6 +957,31 @@ export function composeEngine({
     pushBranch: (branchName: string, forcePush: boolean) => {
       assertBranchIsValidAndNotTrunkAndGetMeta(branchName);
       git.pushBranch({ remote, branchName, noVerify, forcePush });
+    },
+    revalidateBranches: () => {
+      const allBranches = Object.keys(cache.branches);
+      for (const branchName of allBranches) {
+        const meta = cache.branches[branchName];
+        if (meta.validationResult !== 'VALID') {
+          continue;
+        }
+        const parentMeta = cache.branches[meta.parentBranchName];
+        if (!parentMeta || !('branchRevision' in parentMeta)) {
+          continue;
+        }
+        const result = validateOrFixParentBranchRevision(
+          {
+            branchName,
+            branchRevision: meta.branchRevision,
+            parentBranchName: meta.parentBranchName,
+            parentBranchRevision: meta.parentBranchRevision,
+            prInfo: meta.prInfo,
+            parentBranchCurrentRevision: parentMeta.branchRevision,
+          },
+          splog
+        );
+        cache.branches[branchName] = { ...meta, ...result };
+      }
     },
     pullTrunk: () => {
       git.pruneRemote(remote);
